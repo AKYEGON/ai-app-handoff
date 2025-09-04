@@ -266,6 +266,7 @@ export type Database = {
           trial_products_used: number | null
           trial_sales_used: number | null
           trial_start_date: string | null
+          tutorial_preferences: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -286,6 +287,7 @@ export type Database = {
           trial_products_used?: number | null
           trial_sales_used?: number | null
           trial_start_date?: string | null
+          tutorial_preferences?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -306,6 +308,7 @@ export type Database = {
           trial_products_used?: number | null
           trial_sales_used?: number | null
           trial_start_date?: string | null
+          tutorial_preferences?: Json | null
           updated_at?: string | null
         }
         Relationships: []
@@ -567,6 +570,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tutorial_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          step_id: string
+          tutorial_page: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          step_id: string
+          tutorial_page: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          step_id?: string
+          tutorial_page?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
