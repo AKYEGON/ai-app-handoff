@@ -1,0 +1,92 @@
+
+{
+  "name": "DukaFiti - Dukafiti Ni Dukabora",
+  "short_name": "DukaFiti",
+  "description": "Kenya's most advanced shop management system with M-Pesa integration and offline support",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "productivity", "finance"],
+  "lang": "sw",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Rekodi Mauzo",
+      "short_name": "Mauzo",
+      "description": "Rekodi mauzo mapya haraka",
+      "url": "/app?action=sale",
+      "icons": [
+        {
+          "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Angalia Hisa",
+      "short_name": "Hisa",
+      "description": "Ona viwango vya hisa vya sasa",
+      "url": "/app?action=inventory",
+      "icons": [
+        {
+          "src": "/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

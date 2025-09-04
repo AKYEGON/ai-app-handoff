@@ -1,24 +1,106 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Professional App Foundation</title>
-    <meta name="description" content="A professional foundation for modern web applications with complete design system and development tools" />
-    <meta name="author" content="Lovable" />
+    <title>DukaFiti - Dukafiti Ni Dukabora | Smart Business Management for Kenyan Shop Owners</title>
+    <meta name="description" content="DukaFiti ni dukabora! Transform your duka with Kenya's most advanced shop management system. M-Pesa integration, offline capabilities, and comprehensive features built for Kenyan entrepreneurs." />
+    <meta name="author" content="DukaFiti" />
+    <meta name="keywords" content="Kenya shop management, duka management, M-Pesa integration, inventory management, POS system, business management, retail software Kenya, shop inventory Kenya, dukafiti ni dukabora" />
 
-    <meta property="og:title" content="Professional App Foundation" />
-    <meta property="og:description" content="A professional foundation for modern web applications with complete design system and development tools" />
+    <!-- Brand Identity - Using Custom Icon -->
+    <link rel="icon" href="/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png" type="image/png">
+    <link rel="apple-touch-icon" href="/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png">
+
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="DukaFiti">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="DukaFiti - Dukafiti Ni Dukabora | Kenya's Leading Shop Management System" />
+    <meta property="og:description" content="Transform your duka with Kenya's most advanced shop management system. M-Pesa integration, offline capabilities, built for Kenyan entrepreneurs." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://dukafiti.com" />
+    <meta property="og:image" content="https://dukafiti.com/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png" />
+    <meta property="og:site_name" content="DukaFiti - Dukafiti Ni Dukabora" />
 
+    <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="DukaFiti - Dukafiti Ni Dukabora" />
+    <meta name="twitter:description" content="Kenya's most advanced shop management system with M-Pesa integration and offline support." />
+    <meta name="twitter:image" content="https://dukafiti.com/lovable-uploads/bf4819d1-0c68-4a73-9c6e-6597615e7931.png" />
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts - Inter Variable for Professional Look + Caesar Dressing for Brand -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Caesar+Dressing&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical resources -->
+    
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            // Unregister ALL existing service workers first
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map(reg => reg.unregister()));
+            console.log('[SW] Cleared all existing service workers');
+            
+            // Register the unified offline service worker
+            const registration = await navigator.serviceWorker.register('/unified-offline-sw.js', {
+              scope: '/',
+              updateViaCache: 'none'
+            });
+            
+            console.log('[SW] Unified offline service worker registered successfully');
+            
+            // Wait for it to be ready
+            await navigator.serviceWorker.ready;
+            console.log('[SW] Service worker is ready and active');
+            
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[SW] New version available');
+                    // Auto-update after a delay
+                    setTimeout(() => {
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                      window.location.reload();
+                    }, 2000);
+                  }
+                });
+              }
+            });
+            
+            // Store in window for other scripts to access
+            window.dukafiti = window.dukafiti || {};
+            window.dukafiti.serviceWorkerReady = true;
+            
+          } catch (error) {
+            console.error('[SW] Service worker registration failed:', error);
+            // Mark as failed but don't break the app
+            window.dukafiti = window.dukafiti || {};
+            window.dukafiti.serviceWorkerReady = false;
+          }
+        });
+      }
+    </script>
   </body>
 </html>
