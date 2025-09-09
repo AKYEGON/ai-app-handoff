@@ -182,10 +182,42 @@ const CustomersPage = () => {
         const splitData = paymentData.splitPaymentData;
         const splitReference = `debt_split_${Date.now()}`;
         
+        console.log('[CustomersPage] Split payment debt recording:', {
+          splitData,
+          paymentDataAmount: paymentData.amount,
+          splitDataTotal: splitData.total,
+          methods: splitData.methods
+        });
+        
+        // Validate split payment data
+        const methodAmounts = [
+          splitData.methods.cash?.amount || 0,
+          splitData.methods.mpesa?.amount || 0,
+          splitData.methods.debt?.amount || 0,
+          splitData.methods.discount?.amount || 0
+        ];
+        const calculatedTotal = methodAmounts.reduce((sum, amount) => sum + amount, 0);
+        
+        if (Math.abs(calculatedTotal - splitData.total) > 0.01) {
+          console.error('[CustomersPage] Split payment validation failed:', {
+            calculatedTotal,
+            expectedTotal: splitData.total,
+            methodAmounts,
+            methods: splitData.methods
+          });
+          throw new Error(`Split payment amounts don't add up. Expected: ${splitData.total}, Got: ${calculatedTotal}`);
+        }
+        
+        console.log('[CustomersPage] Split payment validation passed:', {
+          calculatedTotal,
+          expectedTotal: splitData.total
+        });
+        
         // Create individual payment records for each method in the split
         const paymentPromises = [];
         
         if (splitData.methods.cash && splitData.methods.cash.amount > 0) {
+          console.log('[CustomersPage] Recording cash payment:', splitData.methods.cash.amount);
           paymentPromises.push(createDebtPayment({
             user_id: user?.id || '',
             customer_id: selectedCustomer.id,
@@ -198,6 +230,7 @@ const CustomersPage = () => {
         }
         
         if (splitData.methods.mpesa && splitData.methods.mpesa.amount > 0) {
+          console.log('[CustomersPage] Recording mpesa payment:', splitData.methods.mpesa.amount);
           paymentPromises.push(createDebtPayment({
             user_id: user?.id || '',
             customer_id: selectedCustomer.id,
@@ -211,6 +244,7 @@ const CustomersPage = () => {
         
         // Handle discount if present (record as negative adjustment)
         if (splitData.methods.discount && splitData.methods.discount.amount > 0) {
+          console.log('[CustomersPage] Recording discount payment:', splitData.methods.discount.amount);
           paymentPromises.push(createDebtPayment({
             user_id: user?.id || '',
             customer_id: selectedCustomer.id,
@@ -225,6 +259,8 @@ const CustomersPage = () => {
         // Execute all payment records
         await Promise.all(paymentPromises);
         totalPaymentAmount = splitData.total;
+        
+        console.log('[CustomersPage] Split payment recorded, total amount:', totalPaymentAmount);
       } else {
         // Single payment method
         await createDebtPayment({

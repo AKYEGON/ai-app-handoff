@@ -2,26 +2,25 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUnifiedCustomers } from '@/hooks/useUnifiedCustomers';
-import { useUnifiedSales } from '@/hooks/useUnifiedSales';
+import { useSupabaseDebtPayments } from '@/hooks/useSupabaseDebtPayments';
 import { formatCurrency } from '@/utils/currency';
 import { useToast } from '@/hooks/use-toast';
-import { createSplitPaymentSales, generateSplitPaymentReference } from '@/utils/splitPaymentUtils';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Test component to verify split payment debt handling is working correctly
- * This component creates test sales with split payments that include debt
- * and verifies that customer debt is only increased once (not doubled)
+ * Deep debugging test for split payment debt issues
+ * This will help identify exactly where the doubling occurs
  */
 export const SplitPaymentDebtTest: React.FC = () => {
   const { customers, updateCustomer } = useUnifiedCustomers();
-  const { createSale } = useUnifiedSales();
+  const { createMultipleDebtPayments } = useSupabaseDebtPayments();
   const { user } = useAuth();
   const { toast } = useToast();
   const [testing, setTesting] = useState(false);
-  const [testResults, setTestResults] = useState<string[]>([]);
+  const [debugResults, setDebugResults] = useState<string[]>([]);
 
-  const runTest = async () => {
+  const runDeepDebtTest = async () => {
     if (!user || customers.length === 0) {
       toast({
         title: "Test Requirements Not Met",
@@ -32,136 +31,193 @@ export const SplitPaymentDebtTest: React.FC = () => {
     }
 
     setTesting(true);
-    setTestResults([]);
+    setDebugResults([]);
     const results: string[] = [];
 
     try {
       // Get a test customer
       const testCustomer = customers[0];
-      const initialDebt = testCustomer.outstandingDebt;
-      results.push(`Initial customer debt: ${formatCurrency(initialDebt)}`);
+      results.push(`🧪 Testing with customer: ${testCustomer.name} (ID: ${testCustomer.id})`);
+      
+      // Check initial state
+      results.push(`📊 Initial customer debt: ${formatCurrency(testCustomer.outstandingDebt)}`);
+      results.push(`📊 Initial total purchases: ${formatCurrency(testCustomer.totalPurchases || 0)}`);
 
-      // Create a split payment scenario: 100 total, 60 cash + 40 debt
-      const testTotal = 100;
-      const debtAmount = 40;
-      const cashAmount = 60;
-
-      const splitPaymentGroup = {
-        reference: generateSplitPaymentReference(),
-        payments: [
-          { method: 'cash' as const, amount: cashAmount },
-          { method: 'debt' as const, amount: debtAmount }
-        ],
-        totalAmount: testTotal,
-        productId: 'test-product-id',
-        productName: 'Test Product',
-        quantity: 1,
-        sellingPrice: testTotal,
-        costPrice: 50,
-        customerId: testCustomer.id,
-        customerName: testCustomer.name
-      };
-
-      results.push(`Creating split payment: ${formatCurrency(cashAmount)} cash + ${formatCurrency(debtAmount)} debt`);
-
-      // Create split payment sales using the utility function
-      const splitSales = createSplitPaymentSales(user.id, splitPaymentGroup);
-      results.push(`Generated ${splitSales.length} sale records from split payment`);
-
-      // Create each sale record
-      for (const saleData of splitSales) {
-        const saleWithTimestamp = {
-          ...saleData,
-          timestamp: new Date().toISOString()
-        };
-        await createSale(saleWithTimestamp);
-        results.push(`Created sale record: ${saleData.paymentMethod} - ${formatCurrency(saleData.total)}`);
+      // Query actual database state
+      const { data: initialDbCustomer } = await supabase
+        .from('customers')
+        .select('outstanding_debt, total_purchases')
+        .eq('id', testCustomer.id)
+        .single();
+      
+      if (initialDbCustomer) {
+        results.push(`💾 DB initial debt: ${formatCurrency(initialDbCustomer.outstanding_debt || 0)}`);
+        results.push(`💾 DB initial purchases: ${formatCurrency(initialDbCustomer.total_purchases || 0)}`);
       }
 
-      // Wait a moment for database trigger to execute
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Test Case 1: Simple split payment (30 total: 20 cash + 10 mpesa)
+      results.push(`\n🔬 TEST CASE 1: Split Debt Payment`);
+      results.push(`Creating split payment: 20 cash + 10 mpesa = 30 total`);
 
-      // Refresh customer data to get updated debt
-      const updatedCustomers = await new Promise<any[]>((resolve) => {
-        const timer = setTimeout(() => {
-          resolve(customers);
-        }, 1000);
-        
-        // Listen for customer refresh
-        const handler = () => {
-          clearTimeout(timer);
-          resolve(customers);
-        };
-        window.addEventListener('customers-refreshed', handler, { once: true });
-        
-        // Trigger refresh
-        window.dispatchEvent(new CustomEvent('sale-completed'));
+      const splitPayments = [
+        {
+          user_id: user.id,
+          customer_id: testCustomer.id,
+          customer_name: testCustomer.name,
+          amount: 20,
+          payment_method: 'cash',
+          reference: 'test_split_cash',
+          timestamp: new Date().toISOString(),
+        },
+        {
+          user_id: user.id,
+          customer_id: testCustomer.id,
+          customer_name: testCustomer.name,
+          amount: 10,
+          payment_method: 'mpesa',
+          reference: 'test_split_mpesa',
+          timestamp: new Date().toISOString(),
+        }
+      ];
+
+      // Record the payments
+      await createMultipleDebtPayments(splitPayments);
+      results.push(`✅ Split payments recorded in debt_payments table`);
+
+      // Manually update customer debt (simulating the CustomersPage logic)
+      const totalPaymentAmount = 30;
+      const newDebt = Math.max(0, testCustomer.outstandingDebt - totalPaymentAmount);
+      
+      results.push(`📝 Updating customer debt: ${formatCurrency(testCustomer.outstandingDebt)} - ${formatCurrency(totalPaymentAmount)} = ${formatCurrency(newDebt)}`);
+      
+      await updateCustomer(testCustomer.id, {
+        outstandingDebt: newDebt
       });
 
-      const updatedCustomer = updatedCustomers.find(c => c.id === testCustomer.id);
-      const finalDebt = updatedCustomer?.outstandingDebt || initialDebt;
-      const debtIncrease = finalDebt - initialDebt;
+      // Wait for database to process
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      results.push(`Final customer debt: ${formatCurrency(finalDebt)}`);
-      results.push(`Debt increase: ${formatCurrency(debtIncrease)}`);
+      // Check final state
+      const { data: finalDbCustomer } = await supabase
+        .from('customers')
+        .select('outstanding_debt, total_purchases')
+        .eq('id', testCustomer.id)
+        .single();
 
-      // Check if debt was increased correctly (should be exactly the debt amount, not doubled)
-      if (Math.abs(debtIncrease - debtAmount) < 0.01) {
-        results.push("✅ SUCCESS: Debt increased by correct amount (no doubling)");
-        toast({
-          title: "Test Passed",
-          description: "Split payment debt handling is working correctly!",
+      if (finalDbCustomer) {
+        results.push(`\n📊 FINAL RESULTS:`);
+        results.push(`💾 DB final debt: ${formatCurrency(finalDbCustomer.outstanding_debt || 0)}`);
+        results.push(`💾 Expected debt: ${formatCurrency(newDebt)}`);
+        
+        const debtDifference = Math.abs((finalDbCustomer.outstanding_debt || 0) - newDebt);
+        if (debtDifference < 0.01) {
+          results.push(`✅ SUCCESS: Debt matches expected amount`);
+        } else {
+          results.push(`❌ FAILURE: Debt mismatch - difference: ${formatCurrency(debtDifference)}`);
+        }
+      }
+
+      // Check debt payments table
+      const { data: debtPayments } = await supabase
+        .from('debt_payments')
+        .select('amount, payment_method, reference')
+        .eq('customer_id', testCustomer.id)
+        .ilike('reference', 'test_split_%');
+
+      if (debtPayments) {
+        results.push(`\n💳 DEBT PAYMENTS RECORDED:`);
+        let totalRecorded = 0;
+        debtPayments.forEach(payment => {
+          results.push(`  ${payment.payment_method}: ${formatCurrency(payment.amount)} (${payment.reference})`);
+          totalRecorded += payment.amount;
         });
-      } else {
-        results.push("❌ FAILURE: Debt increase doesn't match expected amount");
-        results.push(`Expected: ${formatCurrency(debtAmount)}, Actual: ${formatCurrency(debtIncrease)}`);
-        toast({
-          title: "Test Failed",
-          description: "Split payment debt handling has issues",
-          variant: "destructive"
-        });
+        results.push(`💰 Total payments recorded: ${formatCurrency(totalRecorded)}`);
+        results.push(`💰 Expected total: ${formatCurrency(totalPaymentAmount)}`);
+        
+        if (Math.abs(totalRecorded - totalPaymentAmount) < 0.01) {
+          results.push(`✅ Payment amounts are correct`);
+        } else {
+          results.push(`❌ Payment amounts are wrong - difference: ${formatCurrency(Math.abs(totalRecorded - totalPaymentAmount))}`);
+        }
       }
 
     } catch (error) {
       results.push(`❌ ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      toast({
-        title: "Test Error",
-        description: "Test failed with error",
-        variant: "destructive"
-      });
+      console.error('Deep debt test error:', error);
     } finally {
-      setTestResults(results);
+      setDebugResults(results);
       setTesting(false);
     }
   };
 
+  const clearTestData = async () => {
+    if (!user || customers.length === 0) return;
+    
+    try {
+      const testCustomer = customers[0];
+      
+      // Delete test payments
+      await supabase
+        .from('debt_payments')
+        .delete()
+        .eq('customer_id', testCustomer.id)
+        .ilike('reference', 'test_split_%');
+        
+      toast({
+        title: "Test Data Cleared",
+        description: "Removed test debt payments from database",
+      });
+      
+      setDebugResults([]);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to clear test data",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Split Payment Debt Test</CardTitle>
+        <CardTitle>Deep Split Payment Debt Analysis</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          This test verifies that split payments with debt components only increase customer debt once, not twice.
+          This test analyzes the exact flow of split payment debt recording to identify doubling issues.
         </p>
         
-        <Button 
-          onClick={runTest} 
-          disabled={testing || !user || customers.length === 0}
-          className="w-full"
-        >
-          {testing ? 'Running Test...' : 'Run Split Payment Debt Test'}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={runDeepDebtTest} 
+            disabled={testing || !user || customers.length === 0}
+            className="flex-1"
+          >
+            {testing ? 'Running Deep Analysis...' : 'Run Deep Debt Test'}
+          </Button>
+          
+          <Button 
+            onClick={clearTestData} 
+            variant="outline"
+            disabled={testing || !user || customers.length === 0}
+          >
+            Clear Test Data
+          </Button>
+        </div>
 
-        {testResults.length > 0 && (
+        {debugResults.length > 0 && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
-            <h3 className="font-medium mb-2">Test Results:</h3>
-            <div className="text-sm space-y-1">
-              {testResults.map((result, index) => (
-                <div key={index} className={`
-                  ${result.includes('SUCCESS') ? 'text-green-600' : ''}
-                  ${result.includes('FAILURE') || result.includes('ERROR') ? 'text-red-600' : ''}
-                `}>
+            <h3 className="font-medium mb-2">Deep Analysis Results:</h3>
+            <div className="text-sm space-y-1 max-h-96 overflow-y-auto">
+              {debugResults.map((result, index) => (
+                <div key={index} className={`font-mono ${
+                  result.includes('SUCCESS') || result.includes('✅') ? 'text-green-600' : 
+                  result.includes('FAILURE') || result.includes('❌') ? 'text-red-600' : 
+                  result.includes('🧪') || result.includes('🔬') ? 'text-blue-600 font-bold' :
+                  result.includes('📊') || result.includes('💾') ? 'text-purple-600' :
+                  ''
+                }`}>
                   {result}
                 </div>
               ))}
@@ -172,6 +228,7 @@ export const SplitPaymentDebtTest: React.FC = () => {
         <div className="text-xs text-muted-foreground">
           <p>Available customers: {customers.length}</p>
           <p>User authenticated: {user ? 'Yes' : 'No'}</p>
+          <p>This test simulates the exact CustomersPage split payment logic</p>
         </div>
       </CardContent>
     </Card>

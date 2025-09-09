@@ -60,13 +60,13 @@ const SplitPaymentModal: React.FC<SplitPaymentModalProps> = ({
       // Set default methods based on context
       if (context === 'debt') {
         // For debt payments, only allow cash, mpesa, and discount (no debt option)
-        setSelectedMethods({ cash: false, mpesa: true, debt: false, discount: true });
+        setSelectedMethods({ cash: false, mpesa: true, debt: false, discount: false });
       } else {
         // For sales, allow all methods including debt
-        setSelectedMethods({ cash: false, mpesa: true, debt: false, discount: true });
+        setSelectedMethods({ cash: false, mpesa: true, debt: false, discount: false });
       }
       
-      // Start with full amount on M-Pesa and zero discount
+      // Start with full amount on M-Pesa initially (user can add more methods)
       setSliderValues([99]); // visual bias toward first segment
       setSelectedCustomerId('');
       setDirectAmounts({
@@ -215,6 +215,13 @@ const SplitPaymentModal: React.FC<SplitPaymentModalProps> = ({
 
   const handleConfirm = () => {
     if (paymentData.isValid) {
+      console.log('[SplitPaymentModal] Confirming split payment:', {
+        paymentData,
+        total: paymentData.total,
+        methods: paymentData.methods,
+        context
+      });
+      
       // Don't pass customerId from modal - let checkout handle customer selection
       const dataWithoutCustomerId = {
         ...paymentData,
@@ -226,6 +233,9 @@ const SplitPaymentModal: React.FC<SplitPaymentModalProps> = ({
           } : undefined
         }
       };
+      
+      console.log('[SplitPaymentModal] Final data being passed:', dataWithoutCustomerId);
+      
       onConfirm(dataWithoutCustomerId);
       onOpenChange(false);
     }
