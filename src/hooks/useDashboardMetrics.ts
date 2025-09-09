@@ -1,6 +1,6 @@
 
 import { Sale, Product, Customer } from '../types';
-import { useUnifiedMetrics } from './useUnifiedMetrics';
+import { useUnifiedMetricsCalculator } from './useUnifiedMetricsCalculator';
 
 interface DashboardMetrics {
   todaySales: {
@@ -27,13 +27,13 @@ export const useDashboardMetrics = (
   products: Product[],
   customers: Customer[]
 ): DashboardMetrics => {
-  // Use unified metrics for consistent data processing
-  const unifiedMetrics = useUnifiedMetrics(sales, products, customers);
+  // Use unified metrics calculator for consistent data processing
+  const unifiedMetrics = useUnifiedMetricsCalculator(sales, products, customers);
   
   // Map unified metrics to dashboard metrics interface
   return {
-    todaySales: unifiedMetrics.todaySales,
-    customers: unifiedMetrics.customers,
-    products: unifiedMetrics.products,
+    todaySales: unifiedMetrics.today,
+    customers: unifiedMetrics.overall.customers,
+    products: unifiedMetrics.overall.products,
   };
 };

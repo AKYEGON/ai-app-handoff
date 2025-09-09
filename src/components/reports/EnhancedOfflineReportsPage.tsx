@@ -88,21 +88,43 @@ const EnhancedOfflineReportsPage = () => {
   // Cache data when online and data is available
   useEffect(() => {
     if (isOnline && dedupedSales.length > 0 && products.length > 0 && customers.length > 0) {
-      // Calculate metrics for caching from deduped sales
-      const metrics = {
-        totalRevenue: dedupedSales.reduce((sum, sale) => sum + sale.total, 0),
-        totalOrders: dedupedSales.length,
-        activeCustomers: customers.filter(c => c.createdDate && new Date(c.createdDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length,
-        lowStockProducts: products.filter(p => p.currentStock < 10).length
-      };
+      // Use unified metrics for consistent caching
+      import('@/hooks/useUnifiedMetricsCalculator').then(({ useUnifiedMetricsCalculator }) => {
+        // Calculate current period metrics for caching (today)
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const todayRange = { from: today, to: today };
+        
+        // We can't use the hook directly here, so we recreate the calculation logic
+        const totalRevenue = dedupedSales.reduce((sum, sale) => {
+          const total = Number(sale.total) || 0;
+          const discount = Number(sale.paymentDetails?.discountAmount) || 0;
+          return sum + Math.max(0, total - discount);
+        }, 0);
+        
+        const activeCustomers = new Set(
+          dedupedSales.map(s => s.customerId).filter((id): id is string => !!id)
+        ).size;
+        
+        const metrics = {
+          totalRevenue,
+          totalOrders: dedupedSales.length,
+          activeCustomers,
+          lowStockProducts: products.filter(p => {
+            const currentStock = p.currentStock ?? 0;
+            const threshold = p.lowStockThreshold ?? 10;
+            return currentStock !== -1 && currentStock <= threshold && currentStock > 0;
+          }).length
+        };
 
-      // Simple chart data for caching
-      const chartData = dedupedSales.slice(0, 10).map(sale => ({
-        date: sale.timestamp,
-        amount: sale.total
-      }));
+        // Simple chart data for caching
+        const chartData = dedupedSales.slice(0, 10).map(sale => ({
+          date: sale.timestamp,
+          amount: sale.total
+        }));
 
-      cacheSnapshot(dedupedSales, products, customers, metrics, chartData);
+        cacheSnapshot(dedupedSales, products, customers, metrics, chartData);
+      });
     }
   }, [dedupedSales, products, customers, isOnline, cacheSnapshot]);
 

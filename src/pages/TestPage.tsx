@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, AlertCircle, Info } from 'lucide-react';
 import SplitPaymentDebtTest from '@/components/debug/SplitPaymentDebtTest';
 import SplitPaymentFix from '@/components/debug/SplitPaymentFix';
+import MetricsConsistencyTest from '@/components/debug/MetricsConsistencyTest';
 
 const TestPage = () => {
   const testItems = [
@@ -135,13 +136,14 @@ const TestPage = () => {
         <SplitPaymentFix />
       </div>
 
-      {/* Split Payment Debug Test */}
+      {/* Debug Tools */}
       <Card className="bg-gray-50 border-gray-200">
         <CardHeader>
-          <CardTitle>Debug Tools</CardTitle>
+          <CardTitle>Debug & Testing Tools</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <SplitPaymentDebtTest />
+          <MetricsConsistencyTest />
         </CardContent>
       </Card>
     </div>

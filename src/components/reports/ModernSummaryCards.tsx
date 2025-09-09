@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/utils/currency';
 import { Sale, Product, Customer } from '@/types';
+import { useUnifiedMetricsCalculator } from '@/hooks/useUnifiedMetricsCalculator';
 
 interface ModernSummaryCardsProps {
   sales: Sale[];
@@ -27,40 +28,22 @@ const ModernSummaryCards: React.FC<ModernSummaryCardsProps> = ({
   customers,
   dateRange
 }) => {
-  // Filter sales based on date range
-  const filteredSales = sales.filter(sale => {
-    const saleDate = new Date(sale.timestamp).toISOString().split('T')[0];
-    return saleDate >= dateRange.from && saleDate <= dateRange.to;
-  });
+  // Use unified metrics calculator for consistent calculations
+  const metrics = useUnifiedMetricsCalculator(sales, products, customers, dateRange);
+  
+  // Extract metrics for display (using period metrics for date range)
+  const totalOrders = metrics.period.orderCount;
+  const netRevenue = metrics.period.totalRevenue;
+  const netProfit = metrics.period.totalProfit;
+  const totalDiscounts = metrics.period.totalDiscounts;
+  const activeCustomers = metrics.period.activeCustomers;
+  const averageOrderValue = metrics.period.averageOrderValue;
+  const lowStockProducts = metrics.overall.products.lowStock;
+  const totalOutstandingDebts = metrics.overall.customers.totalDebt;
+  const totalInventoryValue = metrics.overall.products.inventoryValue;
 
-// Calculate metrics (discount-aware)
-  const grossRevenue = filteredSales.reduce((sum, sale) => sum + (sale.total || 0), 0);
-  const totalOrders = filteredSales.length;
-  const activeCustomers = new Set(filteredSales.map(sale => sale.customerId).filter(Boolean)).size;
-  const lowStockProducts = products.filter(product => 
-    product.currentStock !== -1 && product.currentStock <= (product.lowStockThreshold || 10)
-  ).length;
-
-  // Calculate additional metrics
-  const totalOutstandingDebts = customers.reduce((sum, customer) => sum + (customer.outstandingDebt || 0), 0);
-  
-  // Profit before discounts
-  const validProfitSales = filteredSales.filter(sale => sale.costPrice > 0 && sale.sellingPrice > 0);
-  const totalProfit = validProfitSales.reduce((sum, sale) => sum + (sale.profit || 0), 0);
-  
-  // Discounts (sum across filtered sales)
-  const totalDiscounts = filteredSales.reduce((sum, sale) => sum + (sale.paymentDetails?.discountAmount || 0), 0);
-  
-  // Net values after discounts
-  const netRevenue = grossRevenue - totalDiscounts;
-  const netProfit = totalProfit - totalDiscounts;
-  
-  const totalInventoryValue = products.reduce((sum, product) => {
-    if (product.currentStock === -1) return sum;
-    return sum + (product.sellingPrice * product.currentStock);
-  }, 0);
-
-  const averageOrderValue = totalOrders > 0 ? netRevenue / totalOrders : 0;
+  // Calculate gross revenue for discount percentage
+  const grossRevenue = netRevenue + totalDiscounts;
 
   const cards = [
     {
