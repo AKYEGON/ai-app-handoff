@@ -208,29 +208,9 @@ const handleCustomerAdded = useCallback(async (newCustomer: Customer) => {
     try {
       // Generate a clientSaleId for this checkout session to ensure idempotency across items
       const clientSaleId = `cs_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      // For debt sales or split payments with debt, update customer debt
+      // Customer aggregates (debt, purchases) are handled automatically by database trigger
+      // when sales are inserted. No manual updates needed to prevent double-counting.
       let updatedCustomer = selectedCustomer;
-      const debtAmount = paymentMethod === 'debt' ? total : 
-                        (paymentMethod === 'split' && splitPaymentData?.methods.debt ? splitPaymentData.methods.debt.amount : 0);
-      
-      if (debtAmount > 0 && selectedCustomer) {
-        console.log('[NewSalesCheckout] Processing debt payment - updating customer:', {
-          customerId: selectedCustomer.id,
-          customerName: selectedCustomer.name,
-          currentDebt: selectedCustomer.outstandingDebt,
-          additionalDebt: debtAmount,
-          newTotalDebt: (selectedCustomer.outstandingDebt || 0) + debtAmount
-        });
-
-        const customerUpdates = {
-          outstandingDebt: (selectedCustomer.outstandingDebt || 0) + debtAmount,
-          totalPurchases: (selectedCustomer.totalPurchases || 0) + total,
-          lastPurchaseDate: new Date().toISOString(),
-        };
-        
-        // Rely on DB trigger for customer aggregates; avoid client-side debt updates
-
-      }
 
       // Process each item in the cart as a separate sale
       let salesProcessed = 0;

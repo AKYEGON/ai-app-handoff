@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, AlertCircle, Info } from 'lucide-react';
+import SplitPaymentDebtTest from '@/components/debug/SplitPaymentDebtTest';
 
 const TestPage = () => {
   const testItems = [
@@ -127,6 +128,16 @@ const TestPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Split Payment Debug Test */}
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader>
+          <CardTitle>Debug Tools</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SplitPaymentDebtTest />
+        </CardContent>
+      </Card>
     </div>
   );
 };
