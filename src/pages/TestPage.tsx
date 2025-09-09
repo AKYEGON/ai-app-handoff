@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, AlertCircle, Info } from 'lucide-react';
 import SplitPaymentDebtTest from '@/components/debug/SplitPaymentDebtTest';
+import SplitPaymentFix from '@/components/debug/SplitPaymentFix';
 
 const TestPage = () => {
   const testItems = [
@@ -127,6 +128,11 @@ const TestPage = () => {
             Works without internet
           </div>
         </div>
+      </div>
+
+      {/* Split Payment Fix Status */}
+      <div className="space-y-4">
+        <SplitPaymentFix />
       </div>
 
       {/* Split Payment Debug Test */}

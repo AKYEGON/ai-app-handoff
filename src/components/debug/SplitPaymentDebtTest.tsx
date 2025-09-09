@@ -59,40 +59,60 @@ export const SplitPaymentDebtTest: React.FC = () => {
       results.push(`\n🔬 TEST CASE 1: Split Debt Payment`);
       results.push(`Creating split payment: 20 cash + 10 mpesa = 30 total`);
 
-      const splitPayments = [
-        {
-          user_id: user.id,
+      // Now test a real split payment with debt using the sales system
+      results.push(`\n🧪 TESTING: Split payment with debt via sales checkout`);
+      
+      // Test case: 60 total = 30 cash + 30 debt
+      results.push(`Creating sale with split payment: 30 cash + 30 debt = 60 total`);
+      
+      // Insert sale directly into database to test trigger
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert([{
+          product_id: 'test-product-id',
+          product_name: 'Test Product',
+          quantity: 1,
+          selling_price: 60,
+          cost_price: 40,
+          profit: 20,
+          total_amount: 60,
           customer_id: testCustomer.id,
           customer_name: testCustomer.name,
-          amount: 20,
-          payment_method: 'cash',
-          reference: 'test_split_cash',
+          payment_method: 'partial',
+          payment_details: {
+            cashAmount: 30,
+            mpesaAmount: 0,
+            debtAmount: 30,
+            discountAmount: 0,
+            saleReference: 'test_split_sale_ref'
+          },
           timestamp: new Date().toISOString(),
-        },
-        {
-          user_id: user.id,
-          customer_id: testCustomer.id,
-          customer_name: testCustomer.name,
-          amount: 10,
-          payment_method: 'mpesa',
-          reference: 'test_split_mpesa',
-          timestamp: new Date().toISOString(),
-        }
-      ];
-
-      // Record the payments
-      await createMultipleDebtPayments(splitPayments);
-      results.push(`✅ Split payments recorded in debt_payments table`);
-
-      // Manually update customer debt (simulating the CustomersPage logic)
-      const totalPaymentAmount = 30;
-      const newDebt = Math.max(0, testCustomer.outstandingDebt - totalPaymentAmount);
+          client_sale_id: `test_${Date.now()}`,
+          user_id: user.id
+        }])
+        .select()
+        .single();
+        
+      if (saleError) {
+        results.push(`❌ Failed to create test sale: ${saleError.message}`);
+        return;
+      }
       
-      results.push(`📝 Updating customer debt: ${formatCurrency(testCustomer.outstandingDebt)} - ${formatCurrency(totalPaymentAmount)} = ${formatCurrency(newDebt)}`);
+      results.push(`✅ Test sale created with ID: ${saleData.id}`);
+      results.push(`📊 Sale debt amount: ${formatCurrency(30)}`);
       
-      await updateCustomer(testCustomer.id, {
-        outstandingDebt: newDebt
-      });
+      // Wait for trigger to execute
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Check the sale was created properly
+      results.push(`✅ Test sale recorded successfully`);
+
+      // The database trigger should automatically increase debt by 30
+      const expectedNewDebt = testCustomer.outstandingDebt + 30;
+      
+      results.push(`📝 Expected debt increase: ${formatCurrency(testCustomer.outstandingDebt)} + ${formatCurrency(30)} = ${formatCurrency(expectedNewDebt)}`);
+      
+      // No manual customer update needed - the database trigger should handle it
 
       // Wait for database to process
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -107,9 +127,9 @@ export const SplitPaymentDebtTest: React.FC = () => {
       if (finalDbCustomer) {
         results.push(`\n📊 FINAL RESULTS:`);
         results.push(`💾 DB final debt: ${formatCurrency(finalDbCustomer.outstanding_debt || 0)}`);
-        results.push(`💾 Expected debt: ${formatCurrency(newDebt)}`);
+        results.push(`💾 Expected debt: ${formatCurrency(expectedNewDebt)}`);
         
-        const debtDifference = Math.abs((finalDbCustomer.outstanding_debt || 0) - newDebt);
+        const debtDifference = Math.abs((finalDbCustomer.outstanding_debt || 0) - expectedNewDebt);
         if (debtDifference < 0.01) {
           results.push(`✅ SUCCESS: Debt matches expected amount`);
         } else {
@@ -131,13 +151,13 @@ export const SplitPaymentDebtTest: React.FC = () => {
           results.push(`  ${payment.payment_method}: ${formatCurrency(payment.amount)} (${payment.reference})`);
           totalRecorded += payment.amount;
         });
-        results.push(`💰 Total payments recorded: ${formatCurrency(totalRecorded)}`);
-        results.push(`💰 Expected total: ${formatCurrency(totalPaymentAmount)}`);
+        results.push(`💰 Sale debt amount: ${formatCurrency(30)}`);
+        results.push(`💰 This was a sale, not a debt payment, so debt_payments table should be empty for this test`);
         
-        if (Math.abs(totalRecorded - totalPaymentAmount) < 0.01) {
-          results.push(`✅ Payment amounts are correct`);
+        if (debtPayments.length === 0) {
+          results.push(`✅ Debt payments table correctly empty (this was a sale, not a payment)`);
         } else {
-          results.push(`❌ Payment amounts are wrong - difference: ${formatCurrency(Math.abs(totalRecorded - totalPaymentAmount))}`);
+          results.push(`⚠️ Unexpected debt payments found: ${debtPayments.length} records`);
         }
       }
 
