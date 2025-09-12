@@ -34,8 +34,16 @@ localPort = 4000
 externalPort = 3000
 
 [[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
 localPort = 8080
 externalPort = 80
+
+[[ports]]
+localPort = 32887
+externalPort = 3001
 
 [agent]
 integrations = ["javascript_database:1.0.0"]
