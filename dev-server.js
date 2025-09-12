@@ -1,30 +1,55 @@
 #!/usr/bin/env node
 
-// Custom dev server that forces port 5000
-process.env.PORT = '5000';
-process.env.VITE_PORT = '5000';
+import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Import and run vite with explicit port
-const { createServer } = require('vite');
-const path = require('path');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-async function startDevServer() {
-  try {
-    const server = await createServer({
-      configFile: path.resolve(__dirname, 'vite.config.ts'),
-      server: {
-        host: '::',
-        port: 5000,
-        strictPort: true,
-      }
-    });
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-    await server.listen();
-    server.printUrls();
-  } catch (error) {
-    console.error('Error starting dev server:', error);
-    process.exit(1);
-  }
-}
+// Start Vite dev server on internal port 5173
+const viteProcess = spawn('npm', ['run', 'dev'], {
+  stdio: 'inherit',
+  cwd: __dirname
+});
 
-startDevServer();
+// Start AI server on port 8000
+const aiProcess = spawn('node', ['server.js'], {
+  stdio: 'inherit',
+  cwd: './ai-server'
+});
+
+// Wait for servers to start
+setTimeout(() => {
+  // Proxy /api requests to AI server
+  app.use('/api', createProxyMiddleware({
+    target: 'http://localhost:8000',
+    changeOrigin: true
+  }));
+
+  // Proxy all other requests to Vite dev server
+  app.use('/', createProxyMiddleware({
+    target: 'http://localhost:5173',
+    changeOrigin: true,
+    ws: true // Enable WebSocket proxying for HMR
+  }));
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Proxy server running on port ${PORT}`);
+    console.log(`📱 Vite dev server: http://localhost:5173`);
+    console.log(`🤖 AI server: http://localhost:8000`);
+    console.log(`🌐 External access: Available on Replit domain`);
+  });
+}, 3000);
+
+// Handle process cleanup
+process.on('SIGTERM', () => {
+  viteProcess.kill();
+  aiProcess.kill();
+  process.exit(0);
+});
