@@ -15,7 +15,7 @@ const GIT_REMOTE = process.env.GIT_REMOTE || 'origin';
 const GIT_BRANCH = process.env.GIT_BRANCH || 'main';
 
 // DeepSeek API configuration
-const DEEPSEEK_API_KEY = 'sk-e19eb9d9cf844a1798fc2469aa24fc37';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
 // Endpoint: propose changes using DeepSeek API
