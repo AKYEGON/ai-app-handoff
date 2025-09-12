@@ -1,3 +1,18 @@
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
+const git = require('simple-git')();
+
+const app = express();
+app.use(express.json());
+
+// Configuration variables
+const RUN_TESTS_ON_APPLY = process.env.RUN_TESTS_ON_APPLY === 'true';
+const GIT_PUSH = process.env.GIT_PUSH === 'true';
+const GIT_REMOTE = process.env.GIT_REMOTE || 'origin';
+const GIT_BRANCH = process.env.GIT_BRANCH || 'main';
+
 // Endpoint: apply selected files (write + commit + optional push + run tests)
 app.post('/api/apply', async (req, res) => {
   const { files, commitMessage } = req.body;

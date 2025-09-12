@@ -1,0 +1,129 @@
+<!-- public/ai-chat.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AI Edit Chat</title>
+  <style>
+    body{font-family:system-ui,Arial;display:flex;gap:12px;padding:12px}
+    .left{width:45%;} .right{width:55%;}
+    #chat{height:60vh;overflow:auto;border:1px solid #ddd;padding:8px;background:#fff;}
+    .user{color:#0b5394;padding:6px}
+    .ai{color:#222;padding:6px;background:#f6f8fa;border-radius:6px;margin-bottom:8px}
+    .file{border:1px solid #eee;padding:8px;margin:8px 0}
+    pre{white-space:pre-wrap;max-height:220px;overflow:auto;background:#f8f8f8;padding:8px}
+    .diff-add{background:#e6ffed}
+    .diff-del{background:#ffecec}
+    button{padding:8px 10px;margin:4px}
+  </style>
+</head>
+<body>
+  <div class="left">
+    <h3>Chat</h3>
+    <div id="chat"></div>
+    <textarea id="prompt" rows="4" style="width:100%"></textarea>
+    <div style="margin-top:8px;">
+      <button id="ask">Propose changes</button>
+    </div>
+  </div>
+
+  <div class="right">
+    <h3>Proposed Changes / Diff</h3>
+    <div id="changes"></div>
+    <div id="applyArea" style="display:none">
+      <input id="commitMsg" placeholder="Commit message" style="width:100%;margin-bottom:6px"/>
+      <button id="applySelected">Apply selected files</button>
+    </div>
+  </div>
+
+<script>
+const chat = document.getElementById('chat');
+const promptEl = document.getElementById('prompt');
+const askBtn = document.getElementById('ask');
+const changes = document.getElementById('changes');
+const applyArea = document.getElementById('applyArea');
+const commitMsg = document.getElementById('commitMsg');
+
+function addChat(role, text) {
+  const d = document.createElement('div');
+  d.className=role==='user'?'user':'ai';
+  d.textContent = (role==='user'?'You: ':'AI: ') + text;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+askBtn.onclick = async () => {
+  const prompt = promptEl.value.trim();
+  if (!prompt) return alert('Write a prompt');
+  addChat('user', prompt);
+  addChat('ai', 'Thinking...');
+  const resp = await fetch('/api/propose', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt })
+  });
+  const data = await resp.json();
+  chat.lastChild.remove();
+  if (!data.ok) {
+    addChat('ai', 'Error: ' + (data.error || JSON.stringify(data)));
+    return;
+  }
+  addChat('ai', 'Summary: ' + (data.summary || '(none)'));
+  renderChanges(data.files || []);
+};
+
+function renderChanges(files) {
+  changes.innerHTML='';
+  if (!files.length) { changes.textContent='No files proposed.'; return; }
+  files.forEach((f, idx) => {
+    const el = document.createElement('div'); el.className='file';
+    const chk = document.createElement('input'); chk.type='checkbox'; chk.checked=true; chk.dataset.idx=idx;
+    el.appendChild(chk);
+    const title = document.createElement('strong'); title.textContent = f.path; el.appendChild(title);
+    const btnView = document.createElement('button'); btnView.textContent='View full new'; btnView.onclick=()=>alert(f.new);
+    el.appendChild(btnView);
+    // show diff simplified
+    const diffDiv = document.createElement('div');
+    f.diff.forEach(chunk => {
+      const p = document.createElement('div');
+      p.textContent = chunk.value;
+      p.style.whiteSpace='pre-wrap';
+      p.style.padding='4px';
+      if (chunk.added) p.className='diff-add';
+      if (chunk.removed) p.className='diff-del';
+      diffDiv.appendChild(p);
+    });
+    el.appendChild(diffDiv);
+    changes.appendChild(el);
+  });
+  applyArea.style.display='block';
+}
+
+document.getElementById('applySelected').onclick = async () => {
+  // gather files selected
+  const boxes = [...changes.querySelectorAll('input[type=checkbox]')];
+  const idxs = boxes.filter(b=>b.checked).map(b=>parseInt(b.dataset.idx));
+  if (!idxs.length) return alert('Select files to apply');
+  // gather file contents from DOM: we need to reconstruct files array by hitting /api/propose results again or store last response
+  // -> we'll store lastResponse in window
+  const selectedFiles = idxs.map(i => window.lastFiles[i]).map(f => ({ path: f.path, content: f.new }));
+  const commit = commitMsg.value.trim() || 'AI: apply changes';
+  const resp = await fetch('/api/apply', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ files: selectedFiles, commitMessage: commit })
+  });
+  const data = await resp.json();
+  if (!data.ok) return alert('Apply failed: ' + JSON.stringify(data));
+  alert('Applied: ' + (data.applied || []).join(', '));
+  // optional: refresh preview iframe by reloading the page or reloading the preview iframe in Replit
+  location.reload();
+};
+
+// store last response for applySelected
+window.lastFiles = [];
+const originalRenderChanges = renderChanges;
+renderChanges = function(files) {
+  // save to window.lastFiles in a format with old/new
+  window.lastFiles = files;
+  originalRenderChanges(files);
+};
+</script>
+</body>
+</html>
