@@ -8,6 +8,17 @@ const git = simpleGit();
 const app = express();
 app.use(express.json());
 
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5000');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 // Configuration variables
 const RUN_TESTS_ON_APPLY = process.env.RUN_TESTS_ON_APPLY === 'true';
 const GIT_PUSH = process.env.GIT_PUSH === 'true';
@@ -113,5 +124,5 @@ app.post('/api/apply', async (req, res) => {
   }
 });
 
-const PORT = process.env.AI_SERVER_PORT || 4000;
+const PORT = process.env.AI_SERVER_PORT || 8000;
 app.listen(PORT, () => console.log(`AI server listening on ${PORT}`));
