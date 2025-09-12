@@ -42,7 +42,7 @@ app.post('/api/propose', async (req, res) => {
         'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
       },
       body: JSON.stringify({
-        model: "deepseek-coder-v2-instruct",
+        model: "deepseek-chat",
         messages: [
           {
             role: "system",
@@ -125,4 +125,4 @@ app.post('/api/apply', async (req, res) => {
 });
 
 const PORT = process.env.AI_SERVER_PORT || 8000;
-app.listen(PORT, () => console.log(`AI server listening on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`AI server listening on ${PORT}`));
