@@ -1,0 +1,4 @@
+#!/bin/bash
+# Local vite wrapper that forces port 5000
+export PORT=5000
+exec npx vite --port 5000 --host 0.0.0.0 "$@"
