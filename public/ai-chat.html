@@ -141,15 +141,23 @@
           el.appendChild(btnView);
           // show diff simplified
           const diffDiv = document.createElement("div");
-          f.diff.forEach((chunk) => {
+          if (f.diff && Array.isArray(f.diff)) {
+            f.diff.forEach((chunk) => {
+              const p = document.createElement("div");
+              p.textContent = chunk.value;
+              p.style.whiteSpace = "pre-wrap";
+              p.style.padding = "4px";
+              if (chunk.added) p.className = "diff-add";
+              if (chunk.removed) p.className = "diff-del";
+              diffDiv.appendChild(p);
+            });
+          } else {
             const p = document.createElement("div");
-            p.textContent = chunk.value;
-            p.style.whiteSpace = "pre-wrap";
-            p.style.padding = "4px";
-            if (chunk.added) p.className = "diff-add";
-            if (chunk.removed) p.className = "diff-del";
+            p.textContent = "No diff available - see full content in 'View full new' button";
+            p.style.fontStyle = "italic";
+            p.style.color = "#666";
             diffDiv.appendChild(p);
-          });
+          }
           el.appendChild(diffDiv);
           changes.appendChild(el);
         });
