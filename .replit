@@ -20,6 +20,10 @@ author = "agent"
 task = "workflow.run"
 args = "Full Application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "AI Server"
+
 [[workflows.workflow]]
 name = "Full Application"
 author = "agent"
@@ -31,6 +35,18 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "AI Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node ai-server/server.js"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [[ports]]
 localPort = 4000
@@ -49,7 +65,7 @@ localPort = 8000
 externalPort = 8000
 
 [[ports]]
-localPort = 33437
+localPort = 35187
 externalPort = 3001
 
 [agent]

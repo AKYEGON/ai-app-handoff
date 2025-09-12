@@ -544,7 +544,11 @@
         testConnectionButton.textContent = 'Testing...';
         
         try {
-          const response = await fetch('/api/test-openrouter');
+          const response = await fetch('/api/test-openrouter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey }),
+          });
           const data = await response.json();
           
           if (data.ok) {

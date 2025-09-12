@@ -38,10 +38,10 @@ const OPENROUTER_TIMEOUT = parseInt(process.env.OPENROUTER_TIMEOUT) || 120000;
 
 // Model priority list for OpenRouter
 const DEEPSEEK_MODELS = [
-  "openrouter/deepseek/deepseek-chat-v3.1:free",
-  "openrouter/deepseek/deepseek-v3.1", 
-  "openrouter/deepseek/deepseek-coder-v2-instruct",
-  "openrouter/deepseek/deepseek-coder-v2"
+  "deepseek/deepseek-chat",
+  "deepseek/deepseek-coder",
+  "anthropic/claude-3-haiku",
+  "meta-llama/llama-3.1-8b-instruct:free"
 ];
 
 if (!OPENROUTER_KEY) {
@@ -50,9 +50,9 @@ if (!OPENROUTER_KEY) {
 }
 
 // Try multiple DeepSeek models via OpenRouter
-async function tryOpenRouterModels(messages, temperature = 0.12, maxTokens = 4000) {
-  if (!OPENROUTER_KEY) {
-    throw new Error('OPENROUTER_KEY not configured. Set it in Replit secrets.');
+async function tryOpenRouterModels(messages, apiKey, temperature = 0.12, maxTokens = 4000) {
+  if (!apiKey) {
+    throw new Error('OpenRouter API key required.');
   }
 
   for (const model of DEEPSEEK_MODELS) {
@@ -66,7 +66,7 @@ async function tryOpenRouterModels(messages, temperature = 0.12, maxTokens = 400
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_KEY}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: model,
@@ -126,10 +126,6 @@ app.post('/api/propose', async (req, res) => {
   }
 
   try {
-    // Temporarily override the global key
-    const originalKey = process.env.OPENROUTER_KEY;
-    process.env.OPENROUTER_KEY = effectiveKey;
-    
     const messages = [
       {
         role: "system",
@@ -141,10 +137,7 @@ app.post('/api/propose', async (req, res) => {
       }
     ];
 
-    const { content, model } = await tryOpenRouterModels(messages);
-
-    // Restore original key
-    if (originalKey) process.env.OPENROUTER_KEY = originalKey;
+    const { content, model } = await tryOpenRouterModels(messages, effectiveKey);
 
     // Try to parse the JSON response
     try {
@@ -167,6 +160,18 @@ app.post('/api/propose', async (req, res) => {
 
 // Endpoint: apply selected files (write + commit + optional push + run tests)
 app.post('/api/apply', async (req, res) => {
+  // Security: Only allow from localhost or same origin
+  const clientIP = req.ip || req.connection.remoteAddress;
+  const isLocalhost = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP?.includes('127.0.0.1');
+  const isSameOrigin = req.get('origin')?.includes(req.get('host'));
+  
+  if (!isLocalhost && !isSameOrigin) {
+    return res.status(403).json({ 
+      ok: false, 
+      error: 'Forbidden: Apply endpoint restricted to localhost/same origin only' 
+    });
+  }
+
   const { files, commitMessage } = req.body;
   if (!files || !Array.isArray(files)) return res.status(400).json({ error: 'files array required' });
 
@@ -207,12 +212,15 @@ app.post('/api/apply', async (req, res) => {
 });
 
 // Test endpoint for OpenRouter
-app.get('/api/test-openrouter', async (req, res) => {
+app.post('/api/test-openrouter', async (req, res) => {
   try {
-    if (!OPENROUTER_KEY) {
+    const { apiKey } = req.body;
+    const effectiveKey = apiKey || OPENROUTER_KEY;
+    
+    if (!effectiveKey) {
       return res.json({ 
         ok: false, 
-        error: 'OPENROUTER_KEY not configured. Set it in Replit secrets.' 
+        error: 'OpenRouter API key required. Provide apiKey in request body or set OPENROUTER_KEY in environment.' 
       });
     }
 
@@ -223,7 +231,7 @@ app.get('/api/test-openrouter', async (req, res) => {
       }
     ];
 
-    const { content, model } = await tryOpenRouterModels(messages);
+    const { content, model } = await tryOpenRouterModels(messages, effectiveKey);
     
     res.json({ 
       ok: true, 
