@@ -1,9 +1,10 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const { exec } = require('child_process');
-const git = require('simple-git')();
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { simpleGit } from 'simple-git';
 
+const git = simpleGit();
 const app = express();
 app.use(express.json());
 
@@ -12,6 +13,64 @@ const RUN_TESTS_ON_APPLY = process.env.RUN_TESTS_ON_APPLY === 'true';
 const GIT_PUSH = process.env.GIT_PUSH === 'true';
 const GIT_REMOTE = process.env.GIT_REMOTE || 'origin';
 const GIT_BRANCH = process.env.GIT_BRANCH || 'main';
+
+// DeepSeek API configuration
+const DEEPSEEK_API_KEY = 'sk-e19eb9d9cf844a1798fc2469aa24fc37';
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+// Endpoint: propose changes using DeepSeek API
+app.post('/api/propose', async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt required' });
+
+  try {
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-coder-v2-instruct",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful coding assistant. When asked to modify files, respond with a JSON object containing a 'summary' field and a 'files' array. Each file should have 'path', 'old', 'new', and 'diff' fields where diff is an array of change objects with 'value', 'added', and 'removed' properties."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return res.status(500).json({ ok: false, error: data.error?.message || 'DeepSeek API error' });
+    }
+
+    const content = data.choices[0]?.message?.content;
+    if (!content) {
+      return res.status(500).json({ ok: false, error: 'No response from DeepSeek' });
+    }
+
+    // Try to parse the JSON response from DeepSeek
+    try {
+      const parsedResponse = JSON.parse(content);
+      res.json({ ok: true, ...parsedResponse });
+    } catch (parseError) {
+      // If not valid JSON, return the raw content
+      res.json({ ok: true, summary: content, files: [] });
+    }
+
+  } catch (error) {
+    console.error('DeepSeek API error:', error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
 
 // Endpoint: apply selected files (write + commit + optional push + run tests)
 app.post('/api/apply', async (req, res) => {
