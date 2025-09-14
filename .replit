@@ -4,7 +4,7 @@ modules = ["nodejs-20", "web"]
 channel = "stable-25_05"
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "autoscale"
 run = ["node", "dev-server.js"]
 build = ["npm", "run", "build"]
 
