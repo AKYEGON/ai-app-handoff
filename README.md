@@ -1,49 +1,8 @@
-# DukaFiti - Advanced Inventory Management System
+# Welcome to your Lovable project
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/e3e40a8a-4b0d-4486-a2f9-2b8a65e76033
-
-## 🤖 AI Code Assistant
-
-This project includes an AI-powered code assistant using DeepSeek V3.1 via Siliconflow. The AI can propose and apply code changes safely through a review workflow.
-
-### Quick Start with AI Assistant
-
-1. **Set up environment variables** (Replit Secrets):
-   - `SILICONFLOW_API_KEY` - Your Siliconflow API key
-   - `GITHUB_TOKEN` - GitHub token for PR creation
-
-2. **Start both services**:
-   ```bash
-   # Option 1: Use the combined startup script
-   chmod +x start-ai-dev.sh
-   ./start-ai-dev.sh
-   
-   # Option 2: Manual startup (2 terminals)
-   # Terminal 1: Main app
-   npm run dev
-   
-   # Terminal 2: AI middleware
-   cd ai && npm install && npm start
-   ```
-
-3. **Use the AI chat interface**:
-   - Navigate to `/ai-chat.html` in your browser
-   - Describe code changes you want
-   - Review proposed changes
-   - Apply selected changes (creates GitHub PR)
-
-### AI Workflow Features
-
-- ✅ **Safe propose→review→apply loop**
-- ✅ **Automatic PR creation** 
-- ✅ **Test validation** before applying changes
-- ✅ **Never auto-applies to main branch**
-- ✅ **Diff visualization** for all changes
-- ✅ **Model fallback** (deepseek-v3.1-instruct → deepseek-coder-v2-instruct → deepseek-v3.1)
-
-See `ai/README.md` for detailed documentation.
 
 ## How can I edit this code?
 

@@ -1,11 +1,11 @@
-modules = ["nodejs-20", "web", "python-3.11"]
+modules = ["nodejs-20", "web"]
 
 [nix]
 channel = "stable-25_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["npm", "run", "build", "&&", "npm", "run", "preview"]
+run = ["npm", "run", "build", "&&", "npx", "serve", "-s", "dist", "-l", "5000"]
 build = ["npm", "run", "build"]
 
 [workflows]
@@ -18,35 +18,19 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Frontend"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Python Chat Server"
+args = "Full Application"
 
 [[workflows.workflow]]
-name = "Frontend"
+name = "Full Application"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "node dev-server.js"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
-
-[[workflows.workflow]]
-name = "Python Chat Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd python-backend && python start_chat_server.py"
-waitForPort = 8000
 
 [[ports]]
 localPort = 4000
@@ -57,8 +41,16 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 5173
+externalPort = 5173
+
+[[ports]]
 localPort = 8000
 externalPort = 8000
+
+[[ports]]
+localPort = 36717
+externalPort = 3001
 
 [agent]
 integrations = ["javascript_database:1.0.0"]

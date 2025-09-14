@@ -1,509 +1,813 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Code Assistant</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DukaFiti AI Assistant - Like Ghost Writer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 16px;
+        color: #333;
+      }
+      
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        height: calc(100vh - 32px);
+      }
+      
+      .sidebar {
+        width: 320px;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+      }
+      
+      .subtitle {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      
+      .api-key-section {
+        background: #fff;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 16px;
+      }
+      
+      .api-key-section h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #374151;
+      }
+      
+      .api-key-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      
+      .api-key-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      .test-button {
+        margin-top: 8px;
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .test-button:hover {
+        background: #059669;
+      }
+      
+      .test-button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      
+      .chat-container {
+        flex: 1;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .message {
+        max-width: 80%;
+        word-wrap: break-word;
+      }
+      
+      .message.user {
+        align-self: flex-end;
+        background: #3b82f6;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 18px 18px 4px 18px;
+        font-size: 14px;
+      }
+      
+      .message.ai {
+        align-self: flex-start;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 12px 16px;
+        border-radius: 18px 18px 18px 4px;
+        font-size: 14px;
+        position: relative;
+      }
+      
+      .message.ai.thinking {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: thinking 2s infinite;
+      }
+      
+      @keyframes thinking {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      
+      .chat-input-container {
+        padding: 16px 20px;
+        border-top: 1px solid #e2e8f0;
+        background: #fafbfc;
+      }
+      
+      .chat-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 24px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 48px;
+        max-height: 120px;
+        outline: none;
+        transition: all 0.2s;
+      }
+      
+      .chat-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      .input-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+      }
+      
+      .send-button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      .send-button:hover:not(:disabled) {
+        background: #2563eb;
+        transform: translateY(-1px);
+      }
+      
+      .send-button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .changes-panel {
+        width: 400px;
+        background: #fff;
+        border-left: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      
+      .changes-header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+      }
+      
+      .changes-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      
+      .changes-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      
+      .file-change {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: all 0.2s;
+      }
+      
+      .file-change:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+      }
+      
+      .file-header {
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .file-checkbox {
+        margin-right: 8px;
+      }
+      
+      .file-path {
+        font-weight: 500;
+        color: #374151;
+        font-size: 14px;
+        flex: 1;
+        font-family: 'Monaco', 'Menlo', monospace;
+      }
+      
+      .view-button {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      
+      .file-diff {
+        padding: 12px 16px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        max-height: 200px;
+        overflow-y: auto;
+        background: #fafbfc;
+      }
+      
+      .diff-line {
+        padding: 2px 4px;
+        margin: 1px 0;
+        border-radius: 2px;
+      }
+      
+      .diff-add {
+        background: #dcfce7;
+        color: #166534;
+      }
+      
+      .diff-remove {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+      
+      .apply-section {
+        padding: 16px 20px;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc;
+      }
+      
+      .commit-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+      
+      .apply-button {
+        background: #059669;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.2s;
+      }
+      
+      .apply-button:hover:not(:disabled) {
+        background: #047857;
+      }
+      
+      .apply-button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      
+      .status-message {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      
+      .status-success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+      
+      .status-error {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+      }
+      
+      @media (max-width: 1024px) {
+        .container {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 32px);
         }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f0f23;
-            color: #cccccc;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+        .sidebar {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
         }
         
-        .header {
-            background: #1a1a3a;
-            padding: 1rem;
-            border-bottom: 1px solid #333;
+        .changes-panel {
+          width: 100%;
         }
-        
-        .header h1 {
-            color: #64ffda;
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-        
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 1rem;
-        }
-        
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: #1a1a3a;
-            border-radius: 8px;
-            min-height: 200px;
-        }
-        
-        .message {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
-            background: #2a2a4a;
-        }
-        
-        .message.user {
-            background: #0d4377;
-            margin-left: 2rem;
-        }
-        
-        .message.ai {
-            background: #1a4a1a;
-            margin-right: 2rem;
-        }
-        
-        .message.error {
-            background: #4a1a1a;
-            border-left: 4px solid #ff6b6b;
-        }
-        
-        .input-area {
-            background: #1a1a3a;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #333;
-        }
-        
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        #promptInput {
-            flex: 1;
-            background: #0f0f23;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 0.75rem;
-            color: #cccccc;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 60px;
-        }
-        
-        #promptInput:focus {
-            outline: none;
-            border-color: #64ffda;
-        }
-        
-        .btn {
-            background: #64ffda;
-            color: #0f0f23;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s;
-        }
-        
-        .btn:hover {
-            background: #4fd3b8;
-        }
-        
-        .btn:disabled {
-            background: #444;
-            color: #888;
-            cursor: not-allowed;
-        }
-        
-        .btn-secondary {
-            background: #444;
-            color: #cccccc;
-        }
-        
-        .btn-secondary:hover {
-            background: #555;
-        }
-        
-        .diff-container {
-            margin-top: 1rem;
-        }
-        
-        .file-section {
-            margin-bottom: 1rem;
-            border: 1px solid #444;
-            border-radius: 8px;
-            background: #1a1a3a;
-        }
-        
-        .file-header {
-            padding: 0.75rem;
-            background: #2a2a4a;
-            border-bottom: 1px solid #444;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .file-checkbox {
-            margin-right: 0.5rem;
-        }
-        
-        .file-path {
-            font-family: monospace;
-            color: #64ffda;
-            font-weight: 600;
-        }
-        
-        .diff-content {
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        
-        .diff-line {
-            padding: 2px 8px;
-            white-space: pre-wrap;
-            border-left: 3px solid transparent;
-        }
-        
-        .diff-line.added {
-            background-color: rgba(0, 255, 0, 0.1);
-            border-left-color: #00ff00;
-        }
-        
-        .diff-line.removed {
-            background-color: rgba(255, 0, 0, 0.1);
-            border-left-color: #ff0000;
-        }
-        
-        .apply-section {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #2a2a4a;
-            border-radius: 8px;
-        }
-        
-        .commit-input {
-            width: 100%;
-            background: #0f0f23;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 0.5rem;
-            color: #cccccc;
-            margin-bottom: 1rem;
-        }
-        
-        .warning {
-            background: #4a3a1a;
-            border: 1px solid #ffaa00;
-            border-radius: 4px;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            color: #ffaa00;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #64ffda;
-        }
-        
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #444;
-            border-radius: 50%;
-            border-top-color: #64ffda;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .result-section {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
-        }
-        
-        .result-success {
-            background: #1a4a1a;
-            border: 1px solid #00ff00;
-        }
-        
-        .result-error {
-            background: #4a1a1a;
-            border: 1px solid #ff0000;
-        }
-        
-        .pr-link {
-            color: #64ffda;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .pr-link:hover {
-            text-decoration: underline;
-        }
+      }
+      
+      .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .typing-dot {
+        width: 6px;
+        height: 6px;
+        background: #64748b;
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+      }
+      
+      .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+      .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+      
+      @keyframes typing {
+        0%, 80%, 100% { opacity: 0.3; }
+        40% { opacity: 1; }
+      }
+      
+      .empty-state {
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+        margin-top: 40px;
+      }
     </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🤖 AI Code Assistant - DeepSeek via Siliconflow</h1>
-    </div>
-    
-    <div class="chat-container">
-        <div class="chat-messages" id="chatMessages">
-            <div class="message ai">
-                <strong>AI Assistant:</strong> Ready to help with your code! Type your request below and I'll propose changes for review.
-            </div>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <h1>🤖 AI Assistant</h1>
+        <p class="subtitle">Ghost Writer for DukaFiti</p>
+        
+        <div class="api-key-section">
+          <h3>🔑 OpenRouter API Key</h3>
+          <input 
+            type="password" 
+            id="apiKey" 
+            class="api-key-input" 
+            placeholder="sk-or-v1-..." 
+            autocomplete="off"
+          />
+          <button id="testConnection" class="test-button">Test Connection</button>
+          <div id="connectionStatus"></div>
         </div>
         
-        <div class="input-area">
-            <div class="input-group">
-                <textarea 
-                    id="promptInput" 
-                    placeholder="Describe what you'd like me to change in your code..."
-                    rows="3"
-                ></textarea>
-                <button class="btn" id="proposeBtn">Propose Changes</button>
-            </div>
+        <div style="font-size: 12px; color: #64748b; line-height: 1.4;">
+          <p><strong>How to use:</strong></p>
+          <ul style="margin-left: 16px; margin-top: 4px;">
+            <li>Enter your OpenRouter API key above</li>
+            <li>Describe what code changes you want</li>
+            <li>Review the proposed changes</li>
+            <li>Apply selected changes to your codebase</li>
+          </ul>
         </div>
+      </div>
+      
+      <div class="main-content">
+        <div class="chat-container">
+          <div class="chat-messages" id="chatMessages">
+            <div class="empty-state">
+              👋 Welcome! Describe the code changes you'd like me to make.
+            </div>
+          </div>
+          
+          <div class="chat-input-container">
+            <textarea 
+              id="chatInput" 
+              class="chat-input" 
+              placeholder="E.g., Add a new product category field to the inventory management form..."
+              rows="2"
+            ></textarea>
+            <div class="input-actions">
+              <span id="inputHint" style="font-size: 12px; color: #64748b;">Shift + Enter for new line</span>
+              <button id="sendButton" class="send-button">
+                <span>✨ Generate Changes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="changes-panel">
+        <div class="changes-header">
+          <h3>📝 Proposed Changes</h3>
+        </div>
+        
+        <div class="changes-content" id="changesContent">
+          <div class="empty-state">
+            No changes proposed yet. Send a message to get started!
+          </div>
+        </div>
+        
+        <div class="apply-section" id="applySection" style="display: none;">
+          <input 
+            id="commitMessage" 
+            class="commit-input" 
+            placeholder="AI: Enhanced inventory management features"
+          />
+          <button id="applyChanges" class="apply-button">
+            🚀 Apply Selected Changes
+          </button>
+        </div>
+      </div>
     </div>
 
     <script>
-        const API_BASE = window.location.origin;
-        let currentProposal = null;
-
-        const elements = {
-            chatMessages: document.getElementById('chatMessages'),
-            promptInput: document.getElementById('promptInput'),
-            proposeBtn: document.getElementById('proposeBtn'),
-        };
-
-        function addMessage(content, type = 'ai') {
-            const message = document.createElement('div');
-            message.className = `message ${type}`;
-            message.innerHTML = content;
-            elements.chatMessages.appendChild(message);
-            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      // Global state
+      let currentFiles = [];
+      let isGenerating = false;
+      
+      // DOM elements
+      const chatMessages = document.getElementById('chatMessages');
+      const chatInput = document.getElementById('chatInput');
+      const sendButton = document.getElementById('sendButton');
+      const apiKeyInput = document.getElementById('apiKey');
+      const testConnectionButton = document.getElementById('testConnection');
+      const connectionStatus = document.getElementById('connectionStatus');
+      const changesContent = document.getElementById('changesContent');
+      const applySection = document.getElementById('applySection');
+      const commitMessage = document.getElementById('commitMessage');
+      const applyChanges = document.getElementById('applyChanges');
+      
+      // Load saved API key
+      const savedApiKey = localStorage.getItem('openrouter_api_key');
+      if (savedApiKey) {
+        apiKeyInput.value = savedApiKey;
+      }
+      
+      // Save API key on change
+      apiKeyInput.addEventListener('input', () => {
+        localStorage.setItem('openrouter_api_key', apiKeyInput.value);
+      });
+      
+      // Test connection
+      testConnectionButton.addEventListener('click', async () => {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          showStatus('Please enter an API key first', 'error');
+          return;
         }
-
-        function showLoading() {
-            addMessage('<div class="loading"><div class="spinner"></div> Processing your request...</div>');
-        }
-
-        function hideLoading() {
-            const loadingElements = elements.chatMessages.querySelectorAll('.loading');
-            loadingElements.forEach(el => el.remove());
-        }
-
-        async function proposeChanges() {
-            const prompt = elements.promptInput.value.trim();
-            if (!prompt) return;
-
-            // Add user message
-            addMessage(`<strong>You:</strong> ${prompt}`, 'user');
-            
-            // Clear input and disable button
-            elements.promptInput.value = '';
-            elements.proposeBtn.disabled = true;
-            
-            showLoading();
-
-            try {
-                const response = await fetch(`${API_BASE}:3001/api/ai/propose`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ prompt }),
-                });
-
-                const data = await response.json();
-                hideLoading();
-
-                if (!data.ok) {
-                    addMessage(`<strong>Error:</strong> ${data.error}`, 'error');
-                    return;
-                }
-
-                currentProposal = data;
-                displayProposal(data);
-
-            } catch (error) {
-                hideLoading();
-                addMessage(`<strong>Network Error:</strong> ${error.message}. Make sure the AI middleware is running on port 3001.`, 'error');
-            } finally {
-                elements.proposeBtn.disabled = false;
-            }
-        }
-
-        function displayProposal(proposal) {
-            let content = `<strong>AI Proposal:</strong> ${proposal.summary}<br>`;
-            content += `<small>Model: ${proposal.model} | Files: ${proposal.files.length}</small>`;
-            
-            if (proposal.files.length > 0) {
-                content += '<div class="diff-container">';
-                
-                proposal.files.forEach((file, index) => {
-                    content += `
-                        <div class="file-section">
-                            <div class="file-header">
-                                <input type="checkbox" class="file-checkbox" data-file-index="${index}" checked>
-                                <span class="file-path">${file.path}</span>
-                            </div>
-                            <div class="diff-content">
-                    `;
-                    
-                    file.diffChunks.forEach(chunk => {
-                        const lines = chunk.value.split('\n');
-                        lines.forEach(line => {
-                            if (line === '' && chunk === file.diffChunks[file.diffChunks.length - 1]) return;
-                            
-                            let className = 'diff-line';
-                            if (chunk.added) className += ' added';
-                            if (chunk.removed) className += ' removed';
-                            
-                            content += `<div class="${className}">${escapeHtml(line)}</div>`;
-                        });
-                    });
-                    
-                    content += `
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                content += `
-                    <div class="apply-section">
-                        <div class="warning">
-                            ⚠️ <strong>Review carefully!</strong> These changes will create a new Git branch and PR. No changes are applied to main automatically.
-                        </div>
-                        <input type="text" class="commit-input" id="commitMessage" placeholder="Commit message (optional)" value="${escapeHtml(proposal.summary)}">
-                        <button class="btn" onclick="applySelectedChanges()">Apply Selected Changes</button>
-                        <button class="btn btn-secondary" onclick="clearProposal()">Cancel</button>
-                    </div>
-                </div>
-                `;
-            }
-            
-            addMessage(content);
-        }
-
-        async function applySelectedChanges() {
-            if (!currentProposal) return;
-
-            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
-            const selectedFiles = Array.from(checkboxes).map(cb => {
-                const index = parseInt(cb.dataset.fileIndex);
-                const file = currentProposal.files[index];
-                return {
-                    path: file.path,
-                    content: file.new
-                };
-            });
-
-            if (selectedFiles.length === 0) {
-                addMessage('<strong>Error:</strong> No files selected for application.', 'error');
-                return;
-            }
-
-            const commitMessage = document.getElementById('commitMessage')?.value.trim() || currentProposal.summary;
-            
-            showLoading();
-
-            try {
-                const response = await fetch(`${API_BASE}:3001/api/ai/apply`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        files: selectedFiles,
-                        commitMessage
-                    }),
-                });
-
-                const data = await response.json();
-                hideLoading();
-
-                if (data.ok) {
-                    let content = `
-                        <div class="result-section result-success">
-                            <strong>✅ Changes Applied Successfully!</strong><br>
-                            <strong>Branch:</strong> ${data.branch}<br>
-                            <strong>PR:</strong> <a href="${data.prUrl}" target="_blank" class="pr-link">${data.prUrl}</a><br>
-                            <strong>Tests:</strong> ${data.tests.passed ? '✅ Passed' : '❌ Failed'}<br>
-                    `;
-                    
-                    if (data.tests.stdout) {
-                        content += `<details><summary>Test Output</summary><pre>${escapeHtml(data.tests.stdout)}</pre></details>`;
-                    }
-                    
-                    content += '</div>';
-                    addMessage(content);
-                    
-                    // Auto-refresh preview (if in iframe context)
-                    setTimeout(() => {
-                        if (window.parent !== window) {
-                            window.parent.postMessage({ type: 'refresh-preview' }, '*');
-                        }
-                    }, 2000);
-                    
-                } else {
-                    addMessage(`
-                        <div class="result-section result-error">
-                            <strong>❌ Application Failed:</strong> ${data.error}
-                        </div>
-                    `, 'error');
-                }
-
-            } catch (error) {
-                hideLoading();
-                addMessage(`<strong>Network Error:</strong> ${error.message}`, 'error');
-            }
-
-            currentProposal = null;
-        }
-
-        function clearProposal() {
-            currentProposal = null;
-            addMessage('<strong>AI:</strong> Proposal cancelled. Ready for your next request!');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Event listeners
-        elements.proposeBtn.addEventListener('click', proposeChanges);
         
-        elements.promptInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                proposeChanges();
+        testConnectionButton.disabled = true;
+        testConnectionButton.textContent = 'Testing...';
+        
+        try {
+          const response = await fetch('/api/test-openrouter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey }),
+          });
+          const data = await response.json();
+          
+          if (data.ok) {
+            showStatus(`✅ Connected! Using model: ${data.model}`, 'success');
+          } else {
+            showStatus(`❌ Failed: ${data.error}`, 'error');
+          }
+        } catch (error) {
+          showStatus(`❌ Connection failed: ${error.message}`, 'error');
+        } finally {
+          testConnectionButton.disabled = false;
+          testConnectionButton.textContent = 'Test Connection';
+        }
+      });
+      
+      // Show status message
+      function showStatus(message, type) {
+        connectionStatus.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+      }
+      
+      // Add message to chat
+      function addMessage(content, isUser = false, isThinking = false) {
+        // Clear empty state
+        if (chatMessages.querySelector('.empty-state')) {
+          chatMessages.innerHTML = '';
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user' : 'ai'}${isThinking ? ' thinking' : ''}`;
+        
+        if (isThinking) {
+          messageDiv.innerHTML = `
+            <div class="typing-indicator">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span style="margin-left: 8px;">${content}</span>
+            </div>
+          `;
+        } else {
+          messageDiv.textContent = content;
+        }
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        return messageDiv;
+      }
+      
+      // Handle send message
+      async function sendMessage() {
+        const prompt = chatInput.value.trim();
+        if (!prompt || isGenerating) return;
+        
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          showStatus('Please enter your OpenRouter API key first', 'error');
+          return;
+        }
+        
+        // Add user message
+        addMessage(prompt, true);
+        
+        // Clear input
+        chatInput.value = '';
+        
+        // Show thinking state
+        isGenerating = true;
+        updateSendButton();
+        const thinkingMessage = addMessage('Analyzing your request and generating code changes...', false, true);
+        
+        try {
+          const response = await fetch('/api/propose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, apiKey }),
+          });
+          
+          const data = await response.json();
+          
+          // Remove thinking message
+          thinkingMessage.remove();
+          
+          if (!data.ok) {
+            addMessage(`❌ Error: ${data.detail || data.error}`, false);
+            showStatus(`Error from ${data.provider || 'API'}: ${data.detail || data.error}`, 'error');
+          } else {
+            const summary = data.summary || 'Code changes generated successfully';
+            const modelUsed = data.model ? ` (using ${data.model})` : '';
+            addMessage(`✨ ${summary}${modelUsed}`, false);
+            
+            // Show changes
+            renderChanges(data.files || []);
+            
+            if (data.files && data.files.length > 0) {
+              showStatus(`Generated ${data.files.length} file(s) for modification`, 'success');
             }
-        });
-
-        // Auto-focus prompt input
-        elements.promptInput.focus();
+          }
+        } catch (error) {
+          thinkingMessage.remove();
+          addMessage(`❌ Network error: ${error.message}`, false);
+          showStatus(`Network error: ${error.message}`, 'error');
+        } finally {
+          isGenerating = false;
+          updateSendButton();
+        }
+      }
+      
+      // Update send button state
+      function updateSendButton() {
+        if (isGenerating) {
+          sendButton.disabled = true;
+          sendButton.innerHTML = '<span>🤔 Generating...</span>';
+        } else {
+          sendButton.disabled = false;
+          sendButton.innerHTML = '<span>✨ Generate Changes</span>';
+        }
+      }
+      
+      // Render file changes
+      function renderChanges(files) {
+        currentFiles = files;
+        
+        if (!files || files.length === 0) {
+          changesContent.innerHTML = '<div class="empty-state">No file changes proposed.</div>';
+          applySection.style.display = 'none';
+          return;
+        }
+        
+        const changesHtml = files.map((file, index) => `
+          <div class="file-change">
+            <div class="file-header">
+              <input type="checkbox" class="file-checkbox" data-index="${index}" checked>
+              <span class="file-path">${file.path}</span>
+              <button class="view-button" onclick="viewFullFile(${index})">View Full</button>
+            </div>
+            <div class="file-diff">
+              ${renderDiff(file)}
+            </div>
+          </div>
+        `).join('');
+        
+        changesContent.innerHTML = changesHtml;
+        applySection.style.display = 'block';
+      }
+      
+      // Render diff for a file
+      function renderDiff(file) {
+        if (!file.diff || !Array.isArray(file.diff)) {
+          return '<div style="color: #64748b; font-style: italic;">Preview not available - use "View Full" to see complete content</div>';
+        }
+        
+        return file.diff.map(chunk => {
+          const className = chunk.added ? 'diff-add' : (chunk.removed ? 'diff-remove' : '');
+          return `<div class="diff-line ${className}">${escapeHtml(chunk.value)}</div>`;
+        }).join('');
+      }
+      
+      // View full file content
+      function viewFullFile(index) {
+        const file = currentFiles[index];
+        if (!file) return;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.8); z-index: 1000; padding: 20px;
+          display: flex; align-items: center; justify-content: center;
+        `;
+        
+        modal.innerHTML = `
+          <div style="background: white; border-radius: 8px; padding: 20px; max-width: 90%; max-height: 90%; overflow: auto;">
+            <h3 style="margin-bottom: 16px;">📄 ${file.path}</h3>
+            <pre style="background: #f8f8f8; padding: 16px; border-radius: 4px; overflow: auto; max-height: 60vh; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; line-height: 1.5;">${escapeHtml(file.new || file.content || 'No content available')}</pre>
+            <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+      }
+      
+      // Apply selected changes
+      applyChanges.addEventListener('click', async () => {
+        const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked'))
+          .map(checkbox => {
+            const index = parseInt(checkbox.dataset.index);
+            const file = currentFiles[index];
+            return { path: file.path, content: file.new || file.content };
+          });
+          
+        if (selectedFiles.length === 0) {
+          showStatus('Please select at least one file to apply', 'error');
+          return;
+        }
+        
+        const commit = commitMessage.value.trim() || 'AI: apply changes';
+        
+        applyChanges.disabled = true;
+        applyChanges.textContent = '🚀 Applying...';
+        
+        try {
+          const response = await fetch('/api/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ files: selectedFiles, commitMessage: commit }),
+          });
+          
+          const data = await response.json();
+          
+          if (!data.ok) {
+            showStatus(`❌ Apply failed: ${data.error}`, 'error');
+            addMessage(`❌ Failed to apply changes: ${data.error}`, false);
+          } else {
+            showStatus(`✅ Applied ${selectedFiles.length} file(s) successfully!`, 'success');
+            addMessage(`✅ Successfully applied changes to: ${data.applied.join(', ')}`, false);
+            
+            // Clear changes after successful apply
+            setTimeout(() => {
+              changesContent.innerHTML = '<div class="empty-state">Changes applied! Send another message to generate more modifications.</div>';
+              applySection.style.display = 'none';
+              currentFiles = [];
+            }, 2000);
+          }
+        } catch (error) {
+          showStatus(`❌ Network error: ${error.message}`, 'error');
+          addMessage(`❌ Network error while applying changes: ${error.message}`, false);
+        } finally {
+          applyChanges.disabled = false;
+          applyChanges.textContent = '🚀 Apply Selected Changes';
+        }
+      });
+      
+      // Handle input events
+      sendButton.addEventListener('click', sendMessage);
+      
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      
+      chatInput.addEventListener('input', () => {
+        // Auto-resize textarea
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      });
+      
+      // Utility functions
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      // Initialize
+      updateSendButton();
     </script>
-</body>
+  </body>
+</html>
+  </body>
 </html>

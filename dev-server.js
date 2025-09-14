@@ -24,26 +24,12 @@ const aiProcess = spawn('node', ['server.js'], {
   cwd: './ai-server'
 });
 
-// Handle AI server process errors
-aiProcess.on('error', (err) => {
-  console.error('❌ AI server failed to start:', err);
-});
-
-aiProcess.on('exit', (code, signal) => {
-  if (code !== 0) {
-    console.error(`❌ AI server exited with code ${code}, signal ${signal}`);
-  }
-});
-
 // Wait for servers to start
 setTimeout(() => {
   // Proxy /api requests to AI server
   app.use('/api', createProxyMiddleware({
-    target: 'http://localhost:8000/api',
-    changeOrigin: true,
-    pathRewrite: {
-      '^/api': ''
-    }
+    target: 'http://localhost:8000',
+    changeOrigin: true
   }));
 
   // Proxy all other requests to Vite dev server
@@ -58,18 +44,11 @@ setTimeout(() => {
     console.log(`📱 Vite dev server: http://localhost:5173`);
     console.log(`🤖 AI server: http://localhost:8000`);
     console.log(`🌐 External access: Available on Replit domain`);
-    console.log(`📋 AI Chat available at: /ai-chat.html`);
   });
 }, 3000);
 
 // Handle process cleanup
 process.on('SIGTERM', () => {
-  viteProcess.kill();
-  aiProcess.kill();
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
   viteProcess.kill();
   aiProcess.kill();
   process.exit(0);
