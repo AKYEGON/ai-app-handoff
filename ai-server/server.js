@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
-import { simpleGit } from 'simple-git';
+import simpleGit from 'simple-git';
 
 const git = simpleGit();
 const app = express();
