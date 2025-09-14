@@ -12,6 +12,12 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Start Vite dev server on internal port 5173
+const viteProcess = spawn('npm', ['run', 'dev'], {
+  stdio: 'inherit',
+  cwd: __dirname
+});
+
 // Start AI server on port 8000
 const aiProcess = spawn('node', ['server.js'], {
   stdio: 'inherit',
@@ -29,22 +35,24 @@ aiProcess.on('exit', (code, signal) => {
   }
 });
 
-// Wait for AI server to start then setup proxy
+// Wait for servers to start
 setTimeout(() => {
   // Proxy /api requests to AI server
   app.use('/api', createProxyMiddleware({
     target: 'http://localhost:8000',
-    changeOrigin: true,
-    pathRewrite: {
-      '^/api': '/api'
-    }
+    changeOrigin: true
   }));
 
-  // Serve static files for frontend (in case Vite isn't running)
-  app.use(express.static('dist'));
+  // Proxy all other requests to Vite dev server
+  app.use('/', createProxyMiddleware({
+    target: 'http://localhost:5173',
+    changeOrigin: true,
+    ws: true // Enable WebSocket proxying for HMR
+  }));
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Dev server running on port ${PORT}`);
+    console.log(`🚀 Proxy server running on port ${PORT}`);
+    console.log(`📱 Vite dev server: http://localhost:5173`);
     console.log(`🤖 AI server: http://localhost:8000`);
     console.log(`🌐 External access: Available on Replit domain`);
     console.log(`📋 AI Chat available at: /ai-chat.html`);
@@ -53,11 +61,13 @@ setTimeout(() => {
 
 // Handle process cleanup
 process.on('SIGTERM', () => {
+  viteProcess.kill();
   aiProcess.kill();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
+  viteProcess.kill();
   aiProcess.kill();
   process.exit(0);
 });
