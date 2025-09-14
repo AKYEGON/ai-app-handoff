@@ -160,7 +160,18 @@ app.post('/api/propose', async (req, res) => {
 
 // Endpoint: apply selected files (write + commit + optional push + run tests)
 app.post('/api/apply', async (req, res) => {
-  // Security: Only allow from localhost or same origin
+  // Security: Require admin token for code modification endpoint
+  const adminToken = process.env.ADMIN_TOKEN;
+  const providedToken = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!adminToken || providedToken !== adminToken) {
+    return res.status(403).json({ 
+      ok: false, 
+      error: 'Forbidden: Admin token required for code modifications' 
+    });
+  }
+  
+  // Additional security: Only allow from localhost or same origin
   const clientIP = req.ip || req.connection.remoteAddress;
   const isLocalhost = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP?.includes('127.0.0.1');
   const isSameOrigin = req.get('origin')?.includes(req.get('host'));
