@@ -24,11 +24,22 @@ const aiProcess = spawn('node', ['server.js'], {
   cwd: './ai-server'
 });
 
+// Handle AI server process errors
+aiProcess.on('error', (err) => {
+  console.error('❌ AI server failed to start:', err);
+});
+
+aiProcess.on('exit', (code, signal) => {
+  if (code !== 0) {
+    console.error(`❌ AI server exited with code ${code}, signal ${signal}`);
+  }
+});
+
 // Wait for servers to start
 setTimeout(() => {
   // Proxy /api requests to AI server
   app.use('/api', createProxyMiddleware({
-    target: 'http://localhost:8000',
+    target: 'http://localhost:8000/api',
     changeOrigin: true
   }));
 
