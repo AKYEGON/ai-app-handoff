@@ -36,12 +36,14 @@ const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const OPENROUTER_TIMEOUT = parseInt(process.env.OPENROUTER_TIMEOUT) || 120000;
 
-// Model priority list for OpenRouter
+// Model priority list for OpenRouter (includes free models)
 const DEEPSEEK_MODELS = [
   "deepseek/deepseek-chat",
-  "deepseek/deepseek-coder",
-  "anthropic/claude-3-haiku",
-  "meta-llama/llama-3.1-8b-instruct:free"
+  "google/gemini-flash-1.5",
+  "meta-llama/llama-3.1-8b-instruct:free",
+  "nousresearch/nous-capybara-7b:free",
+  "mistralai/mistral-7b-instruct:free",
+  "openchat/openchat-7b:free"
 ];
 
 if (!OPENROUTER_KEY) {
@@ -231,14 +233,22 @@ app.post('/api/test-openrouter', async (req, res) => {
     if (!effectiveKey) {
       return res.json({ 
         ok: false, 
-        error: 'OpenRouter API key required. Provide apiKey in request body or set OPENROUTER_KEY in environment.' 
+        error: 'OpenRouter API key required. Get a free key at https://openrouter.ai/keys' 
+      });
+    }
+
+    // Check for test/invalid keys and provide helpful messages
+    if (effectiveKey.includes('test') || effectiveKey.length < 20) {
+      return res.json({ 
+        ok: false, 
+        error: 'Please provide a valid OpenRouter API key. Get yours at https://openrouter.ai/keys' 
       });
     }
 
     const messages = [
       {
         role: "user",
-        content: "Say 'openrouter test ok'"
+        content: "Say 'Connection test successful'"
       }
     ];
 
@@ -252,9 +262,20 @@ app.post('/api/test-openrouter', async (req, res) => {
     
   } catch (error) {
     console.error('🚨 Test endpoint error:', error);
+    
+    // Provide more helpful error messages
+    let helpfulError = error.message;
+    if (error.message.includes('All models failed')) {
+      if (error.message.includes('401') || error.message.includes('User not found')) {
+        helpfulError = 'Invalid API key. Please check your OpenRouter API key and try again. Get a valid key at https://openrouter.ai/keys';
+      } else if (error.message.includes('402') || error.message.includes('Insufficient credits')) {
+        helpfulError = 'No credits available. Add credits to your OpenRouter account at https://openrouter.ai/settings/credits or try the free models.';
+      }
+    }
+    
     res.json({ 
       ok: false, 
-      error: error.message 
+      error: helpfulError 
     });
   }
 });
