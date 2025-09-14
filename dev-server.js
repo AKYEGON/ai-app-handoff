@@ -39,8 +39,11 @@ aiProcess.on('exit', (code, signal) => {
 setTimeout(() => {
   // Proxy /api requests to AI server
   app.use('/api', createProxyMiddleware({
-    target: 'http://localhost:8000',
-    changeOrigin: true
+    target: 'http://localhost:8000/api',
+    changeOrigin: true,
+    pathRewrite: {
+      '^/api': ''
+    }
   }));
 
   // Proxy all other requests to Vite dev server
