@@ -75,7 +75,13 @@ async function callSiliconFlowAPI(messages, apiKey, temperature = 0.12, maxToken
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`HTTP ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+      console.log(`❌ SiliconFlow API error details:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData.error,
+        message: errorData.message
+      });
+      throw new Error(`HTTP ${response.status}: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
     }
 
     const data = await response.json();
