@@ -31,99 +31,84 @@ const GIT_PUSH = process.env.GIT_PUSH === 'true';
 const GIT_REMOTE = process.env.GIT_REMOTE || 'origin';
 const GIT_BRANCH = process.env.GIT_BRANCH || 'main';
 
-// OpenRouter API configuration
-const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_TIMEOUT = parseInt(process.env.OPENROUTER_TIMEOUT) || 120000;
+// SiliconFlow API configuration
+const SILICONFLOW_KEY = process.env.SILICONFLOW_KEY;
+const SILICONFLOW_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const SILICONFLOW_TIMEOUT = parseInt(process.env.SILICONFLOW_TIMEOUT) || 120000;
 
-// Model priority list for OpenRouter (includes free models)
-const DEEPSEEK_MODELS = [
-  "deepseek/deepseek-chat",
-  "google/gemini-flash-1.5",
-  "meta-llama/llama-3.1-8b-instruct:free",
-  "nousresearch/nous-capybara-7b:free",
-  "mistralai/mistral-7b-instruct:free",
-  "openchat/openchat-7b:free"
-];
+// Model configuration for SiliconFlow - only DeepSeek V3.1
+const DEEPSEEK_MODEL = "deepseek-ai/DeepSeek-V3.1";
 
-if (!OPENROUTER_KEY) {
-  console.log("⚠️  OPENROUTER_KEY not found in environment variables");
-  console.log("🔧 Set OPENROUTER_KEY in Replit secrets and restart the ai server");
+if (!SILICONFLOW_KEY) {
+  console.log("⚠️  SILICONFLOW_KEY not found in environment variables");
+  console.log("🔧 Set SILICONFLOW_KEY in Replit secrets and restart the ai server");
 }
 
-// Try multiple DeepSeek models via OpenRouter
-async function tryOpenRouterModels(messages, apiKey, temperature = 0.12, maxTokens = 4000) {
+// Call SiliconFlow API with DeepSeek V3.1 model
+async function callSiliconFlowAPI(messages, apiKey, temperature = 0.12, maxTokens = 4000) {
   if (!apiKey) {
-    throw new Error('OpenRouter API key required.');
+    throw new Error('SiliconFlow API key required.');
   }
 
-  for (const model of DEEPSEEK_MODELS) {
-    try {
-      console.log(`🤖 Trying model: ${model}`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), OPENROUTER_TIMEOUT);
-      
-      const response = await fetch(OPENROUTER_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          temperature: temperature,
-          max_tokens: maxTokens
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 404 || errorData.error?.code === 'model_not_found') {
-          console.log(`❌ Model ${model} not found, trying next...`);
-          continue;
-        }
-        throw new Error(`HTTP ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || data.choices?.[0]?.text;
-      
-      if (!content) {
-        throw new Error('No content in response');
-      }
-      
-      console.log(`✅ Success with model: ${model}`);
-      return { content, model };
-      
-    } catch (error) {
-      console.log(`❌ Error with model ${model}:`, error.message);
-      if (error.name === 'AbortError') {
-        console.log(`⏰ Request timeout for model ${model}`);
-      }
-      // Continue to next model
+  try {
+    console.log(`🤖 Using model: ${DEEPSEEK_MODEL}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SILICONFLOW_TIMEOUT);
+    
+    const response = await fetch(SILICONFLOW_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: DEEPSEEK_MODEL,
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens
+      }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`HTTP ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
     }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || data.choices?.[0]?.text;
+    
+    if (!content) {
+      throw new Error('No content in response');
+    }
+    
+    console.log(`✅ Success with model: ${DEEPSEEK_MODEL}`);
+    return { content, model: DEEPSEEK_MODEL };
+    
+  } catch (error) {
+    console.log(`❌ Error with model ${DEEPSEEK_MODEL}:`, error.message);
+    if (error.name === 'AbortError') {
+      console.log(`⏰ Request timeout for model ${DEEPSEEK_MODEL}`);
+    }
+    throw new Error(`SiliconFlow API call failed: ${error.message}`);
   }
-  
-  throw new Error('All models failed. Check your OpenRouter API key and credit balance.');
 }
 
-// Endpoint: propose changes using OpenRouter + DeepSeek models
+// Endpoint: propose changes using SiliconFlow + DeepSeek V3.1 model
 app.post('/api/propose', async (req, res) => {
   const { prompt, apiKey } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
 
   // Use provided API key or environment variable
-  const effectiveKey = apiKey || OPENROUTER_KEY;
+  const effectiveKey = apiKey || SILICONFLOW_KEY;
   if (!effectiveKey) {
     return res.status(400).json({ 
       ok: false, 
-      provider: 'openrouter',
-      detail: 'OpenRouter API key required. Set OPENROUTER_KEY in environment or provide in request.' 
+      provider: 'siliconflow',
+      detail: 'SiliconFlow API key required. Set SILICONFLOW_KEY in environment or provide in request.' 
     });
   }
 
@@ -139,7 +124,7 @@ app.post('/api/propose', async (req, res) => {
       }
     ];
 
-    const { content, model } = await tryOpenRouterModels(messages, effectiveKey);
+    const { content, model } = await callSiliconFlowAPI(messages, effectiveKey);
 
     // Try to parse the JSON response
     try {
@@ -151,10 +136,10 @@ app.post('/api/propose', async (req, res) => {
     }
 
   } catch (error) {
-    console.error('🚨 OpenRouter API error:', error);
+    console.error('🚨 SiliconFlow API error:', error);
     res.status(500).json({ 
       ok: false, 
-      provider: 'openrouter',
+      provider: 'siliconflow',
       detail: error.message 
     });
   }
@@ -224,16 +209,16 @@ app.post('/api/apply', async (req, res) => {
   }
 });
 
-// Test endpoint for OpenRouter
-app.post('/api/test-openrouter', async (req, res) => {
+// Test endpoint for SiliconFlow
+app.post('/api/test-siliconflow', async (req, res) => {
   try {
     const { apiKey } = req.body;
-    const effectiveKey = apiKey || OPENROUTER_KEY;
+    const effectiveKey = apiKey || SILICONFLOW_KEY;
     
     if (!effectiveKey) {
       return res.json({ 
         ok: false, 
-        error: 'OpenRouter API key required. Get a free key at https://openrouter.ai/keys' 
+        error: 'SiliconFlow API key required. Get a key at https://cloud.siliconflow.cn' 
       });
     }
 
@@ -241,7 +226,7 @@ app.post('/api/test-openrouter', async (req, res) => {
     if (effectiveKey.includes('test') || effectiveKey.length < 20) {
       return res.json({ 
         ok: false, 
-        error: 'Please provide a valid OpenRouter API key. Get yours at https://openrouter.ai/keys' 
+        error: 'Please provide a valid SiliconFlow API key. Get yours at https://cloud.siliconflow.cn' 
       });
     }
 
@@ -252,7 +237,7 @@ app.post('/api/test-openrouter', async (req, res) => {
       }
     ];
 
-    const { content, model } = await tryOpenRouterModels(messages, effectiveKey);
+    const { content, model } = await callSiliconFlowAPI(messages, effectiveKey);
     
     res.json({ 
       ok: true, 
@@ -265,11 +250,11 @@ app.post('/api/test-openrouter', async (req, res) => {
     
     // Provide more helpful error messages
     let helpfulError = error.message;
-    if (error.message.includes('All models failed')) {
-      if (error.message.includes('401') || error.message.includes('User not found')) {
-        helpfulError = 'Invalid API key. Please check your OpenRouter API key and try again. Get a valid key at https://openrouter.ai/keys';
+    if (error.message.includes('SiliconFlow API call failed')) {
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        helpfulError = 'Invalid API key. Please check your SiliconFlow API key and try again. Get a valid key at https://cloud.siliconflow.cn';
       } else if (error.message.includes('402') || error.message.includes('Insufficient credits')) {
-        helpfulError = 'No credits available. Add credits to your OpenRouter account at https://openrouter.ai/settings/credits or try the free models.';
+        helpfulError = 'No credits available. Add credits to your SiliconFlow account.';
       }
     }
     
@@ -283,8 +268,8 @@ app.post('/api/test-openrouter', async (req, res) => {
 const PORT = process.env.AI_SERVER_PORT || 8000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 AI server listening on ${PORT}`);
-  console.log(`🔗 Test endpoint: http://localhost:${PORT}/api/test-openrouter`);
-  if (!OPENROUTER_KEY) {
-    console.log("⚠️  Set OPENROUTER_KEY in Replit secrets and restart the ai server");
+  console.log(`🔗 Test endpoint: http://localhost:${PORT}/api/test-siliconflow`);
+  if (!SILICONFLOW_KEY) {
+    console.log("⚠️  Set SILICONFLOW_KEY in Replit secrets and restart the ai server");
   }
 });
