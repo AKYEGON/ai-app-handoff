@@ -19,7 +19,7 @@ except Exception as e:
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000)
     session_id: Optional[str] = None
-    mode: str = Field(default="fast_code", regex="^(fast_code|deep_reasoning|code_review)$")
+    mode: str = Field(default="fast_code", pattern="^(fast_code|deep_reasoning|code_review)$")
     custom_system_prompt: Optional[str] = None
 
 class ChatResponse(BaseModel):

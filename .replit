@@ -22,7 +22,7 @@ args = "Frontend"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "AI Server"
+args = "Python Chat Server"
 
 [[workflows.workflow]]
 name = "Frontend"
@@ -37,16 +37,16 @@ waitForPort = 5000
 outputType = "webview"
 
 [[workflows.workflow]]
-name = "AI Server"
+name = "Python Chat Server"
 author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node ai-server/server.js"
-waitForPort = 8000
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd python-backend && python start_chat_server.py"
+waitForPort = 8000
 
 [[ports]]
 localPort = 4000
@@ -59,14 +59,6 @@ externalPort = 80
 [[ports]]
 localPort = 8000
 externalPort = 8000
-
-[[ports]]
-localPort = 35723
-externalPort = 3001
-
-[[ports]]
-localPort = 43879
-externalPort = 3002
 
 [agent]
 integrations = ["javascript_database:1.0.0"]
