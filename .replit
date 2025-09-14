@@ -18,19 +18,35 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Full Application"
+args = "Frontend"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "AI Server"
 
 [[workflows.workflow]]
-name = "Full Application"
+name = "Frontend"
 author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow]]
+name = "AI Server"
+author = "agent"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node dev-server.js"
-waitForPort = 5000
+args = "node ai-server/server.js"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [[ports]]
 localPort = 4000
