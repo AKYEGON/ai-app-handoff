@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - DeepSeek Workflow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #92400e;
+            font-size: 14px;
+        }
+
+        .chat-input {
+            margin-bottom: 20px;
+        }
+
+        .chat-input label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .chat-input textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            flex: 1;
+            overflow-y: auto;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .summary {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .file-diff {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .file-header {
+            background: #f9fafb;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-path {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .diff-content {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .diff-line {
+            padding: 2px 16px;
+            white-space: pre-wrap;
+        }
+
+        .diff-added {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .diff-removed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .diff-unchanged {
+            background: white;
+            color: #374151;
+        }
+
+        .apply-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .commit-input {
+            margin-bottom: 16px;
+        }
+
+        .commit-input input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            color: #166534;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            color: #991b1b;
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .pr-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        .pr-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                height: 95vh;
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Assistant</h1>
+            <p>DeepSeek-powered code generation with safe review workflow</p>
+        </div>
+        
+        <div class="content">
+            <div class="warning">
+                ⚠️ <strong>Safety Notice:</strong> Always review diffs carefully before applying changes. 
+                Changes will be applied to a new branch and require PR approval before merging to main.
+            </div>
+            
+            <div class="chat-input">
+                <label for="prompt">What would you like me to help you with?</label>
+                <textarea 
+                    id="prompt" 
+                    placeholder="Example: Add a comment to the README.md file explaining what this project does..."
+                ></textarea>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-primary" onclick="propose()" id="proposeBtn">
+                    <span>🧠 Propose Changes</span>
+                </button>
+                <button class="btn btn-success" onclick="applySelected()" id="applyBtn" disabled>
+                    <span>✅ Apply Selected</span>
+                </button>
+            </div>
+            
+            <div class="results" id="results">
+                <p style="text-align: center; color: #6b7280; margin-top: 40px;">
+                    💡 Enter a prompt above and click "Propose Changes" to get started
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentProposal = null;
+
+        async function propose() {
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            const proposeBtn = document.getElementById('proposeBtn');
+            const results = document.getElementById('results');
+            
+            // Update UI for loading state
+            proposeBtn.disabled = true;
+            proposeBtn.innerHTML = '<span class="loading"><span class="spinner"></span>Thinking...</span>';
+            
+            results.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading"><span class="spinner"></span>AI is analyzing your request...</div></div>';
+
+            try {
+                const response = await fetch('/api/ai/propose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await response.json();
+
+                if (!data.ok) {
+                    throw new Error(data.error || 'Failed to generate proposal');
+                }
+
+                currentProposal = data;
+                displayProposal(data);
+                document.getElementById('applyBtn').disabled = false;
+
+            } catch (error) {
+                results.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+            } finally {
+                proposeBtn.disabled = false;
+                proposeBtn.innerHTML = '<span>🧠 Propose Changes</span>';
+            }
+        }
+
+        function displayProposal(data) {
+            const results = document.getElementById('results');
+            
+            let html = `
+                <div class="summary">
+                    <h3>📋 Summary</h3>
+                    <p>${data.summary}</p>
+                    ${data.metadata ? `
+                        <div style="margin-top: 12px; font-size: 12px; opacity: 0.8;">
+                            Model: ${data.metadata.model || 'N/A'} | 
+                            ${data.metadata.usage ? `Tokens: ${data.metadata.usage.total_tokens || 'N/A'}` : 'Usage: N/A'}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            data.files.forEach((file, index) => {
+                const hasChanges = file.diffChunks.some(chunk => chunk.added || chunk.removed);
+                
+                html += `
+                    <div class="file-diff">
+                        <div class="file-header">
+                            <input type="checkbox" id="file-${index}" ${hasChanges ? 'checked' : ''}>
+                            <label for="file-${index}" class="file-path">${file.path}</label>
+                            <span style="font-size: 12px; color: #6b7280;">
+                                ${file.old ? 'Modified' : 'New file'}
+                            </span>
+                        </div>
+                        <div class="diff-content">
+                `;
+
+                if (hasChanges) {
+                    file.diffChunks.forEach(chunk => {
+                        const className = chunk.added ? 'diff-added' : 
+                                         chunk.removed ? 'diff-removed' : 
+                                         'diff-unchanged';
+                        const prefix = chunk.added ? '+' : chunk.removed ? '-' : ' ';
+                        
+                        chunk.value.split('\n').forEach(line => {
+                            if (line || chunk.value.endsWith('\n')) {
+                                html += `<div class="diff-line ${className}">${prefix} ${escapeHtml(line)}</div>`;
+                            }
+                        });
+                    });
+                } else {
+                    html += '<div class="diff-line diff-unchanged">No changes detected</div>';
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="apply-section">
+                    <div class="commit-input">
+                        <label for="commitMessage">Commit Message (optional):</label>
+                        <input type="text" id="commitMessage" placeholder="AI: ${data.summary}">
+                    </div>
+                </div>
+            `;
+
+            results.innerHTML = html;
+        }
+
+        async function applySelected() {
+            if (!currentProposal) return;
+
+            const selectedFiles = [];
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="file-"]');
+            
+            checkboxes.forEach((checkbox, index) => {
+                if (checkbox.checked && currentProposal.files[index]) {
+                    selectedFiles.push({
+                        path: currentProposal.files[index].path,
+                        content: currentProposal.files[index].new
+                    });
+                }
+            });
+
+            if (selectedFiles.length === 0) {
+                alert('Please select at least one file to apply');
+                return;
+            }
+
+            const commitMessage = document.getElementById('commitMessage').value.trim();
+            const applyBtn = document.getElementById('applyBtn');
+            
+            applyBtn.disabled = true;
+            applyBtn.innerHTML = '<span class="loading"><span class="spinner"></span>Applying...</span>';
+
+            try {
+                const response = await fetch('/api/ai/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        files: selectedFiles, 
+                        commitMessage: commitMessage || undefined,
+                        model: currentProposal.metadata?.model,
+                        usage: currentProposal.metadata?.usage
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    const message = `
+                        <div class="success-message">
+                            ✅ <strong>Changes Applied Successfully!</strong><br>
+                            Branch: <code>${data.branch}</code><br>
+                            Tests: ${data.tests.passed ? '✅ Passed' : '❌ Failed'}<br>
+                            ${data.prUrl ? `<a href="${data.prUrl}" target="_blank" class="pr-link">🔗 View Pull Request</a>` : ''}
+                        </div>
+                    `;
+                    
+                    document.getElementById('results').innerHTML = message + document.getElementById('results').innerHTML;
+                    
+                    // Try to refresh preview if in Replit
+                    if (window.parent && window.parent.location.href.includes('replit')) {
+                        setTimeout(() => {
+                            try {
+                                window.parent.location.reload();
+                            } catch (e) {
+                                console.log('Could not refresh parent window');
+                            }
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to apply changes');
+                }
+
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `❌ Error applying changes: ${error.message}`;
+                document.getElementById('results').insertBefore(errorDiv, document.getElementById('results').firstChild);
+            } finally {
+                applyBtn.disabled = false;
+                applyBtn.innerHTML = '<span>✅ Apply Selected</span>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Allow Enter+Ctrl to submit
+        document.getElementById('prompt').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                propose();
+            }
+        });
+    </script>
+</body>
+</html>

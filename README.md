@@ -4,6 +4,30 @@
 
 **URL**: https://lovable.dev/projects/e3e40a8a-4b0d-4486-a2f9-2b8a65e76033
 
+## 🤖 AI Assistant Integration
+
+This project includes a **DeepSeek AI workflow** for safe, AI-assisted development:
+
+- **AI Chat UI**: Access at `/ai-chat.html`
+- **Safe workflow**: Propose → Review → Apply with PR creation
+- **Model**: DeepSeek v3.1 via Siliconflow API
+- **Security**: No auto-apply to main, all changes via reviewed PRs
+
+### Quick Start with AI Assistant
+
+1. **Set up secrets** in Replit Secrets:
+   - `SILICONFLOW_API_KEY` - Your Siliconflow API key
+   - `GITHUB_TOKEN` - GitHub token with repo permissions
+
+2. **Start services**:
+   ```bash
+   ./start-ai-dev.sh
+   ```
+
+3. **Use AI Chat**: Open `/ai-chat.html` and start prompting!
+
+See [`ai/README.md`](ai/README.md) for complete documentation.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
