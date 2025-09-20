@@ -1,0 +1,8 @@
+{
+  // Live Server: change default port to avoid port conflicts
+  "liveServer.settings.port": 5173,
+  "liveServer.settings.host": "127.0.0.1",
+  "liveServer.settings.useLocalIp": false,
+  "git.enabled": true,
+  "git.enableSmartCommit": true
+}
