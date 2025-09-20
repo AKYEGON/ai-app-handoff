@@ -3,17 +3,11 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
+// Override configuration for local development to use port 5000
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "0.0.0.0",
-    port: 5173,
-    strictPort: true,
-    allowedHosts: true,
-    hmr: {
-      clientPort: 443,
-      protocol: "wss"
-    }
+    host: "::",
+    port: 5000,
   },
   plugins: [
     react(),
